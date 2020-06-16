@@ -12,6 +12,8 @@ std::string resolveShaderType(GLenum shaderType) {
             return "GL_GEOMETRY_SHADER";
         case GL_FRAGMENT_SHADER:
             return "GL_FRAGMENT_SHADER";
+        case GL_COMPUTE_SHADER:
+            return "GL_COMPUTE_SHADER";
         default:
             return "INVALID_SHADER_TYPE"
     }
