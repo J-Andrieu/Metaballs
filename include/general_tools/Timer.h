@@ -1,12 +1,3 @@
-/************************************************
- * @file Timer.h
- *
- * @brief Definition file for the Timer class
- *
- * @details Specifies types as well as the
- *          Timer class
- *
- ************************************************/
 #ifndef TIMER_H
 #define TIMER_H
 
