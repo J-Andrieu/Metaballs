@@ -1,29 +1,34 @@
-GLfloat Graphics::s_quadVertexBufferData* = {-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f};
+#include "Graphics.h"
+
+GLfloat Graphics::s_quadVertexBufferData[8] = {-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f};
 
 Graphics::Graphics(int height, int width) {
     m_sizeChanged = true;
-    m_window = GUIWindow("Metaballs", height, width, Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
-    SDL_SetWindowMinimumSize(m_window, 700, 400);
-    SDL_GL_MakeCurrent(m_window, m_window.getContext());
+    m_window = new GUIWindow("Metaballs", height, width, Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
+    SDL_SetWindowMinimumSize(*m_window, 700, 400);
+    SDL_GL_MakeCurrent(*m_window, m_window->getContext());
     ImGui::StyleColorsDark();
 
     m_gradientSpeed = 0.01f;
-    m_window.setDrawFunc(renderGraphics);
-    m_graphicsParams = {m_defaultCompute, m_tex2ScreenRender, &gradient_speed};
-    m_window.setDrawParams((void*) &m_graphicsParams);
-    m_window.setGUIFunc(drawMenu);
     m_sliderQuad[0] = 42;
     m_sliderQuad[1] = 69;
     m_sliderQuad[2] = 420;
     m_sliderQuad[3] = 9001;
-    m_guiParams = {&m_window, m_sliderQuad, &m_gradientSpeed};
-    m_window.setGUIParams((void*) &m_guiParams);
-
-    m_defaultCompute = Shader::ComputeProgram(
-        Shader::shader(std::ifstream("shaders/standard_render.comp"), GL_COMPUTE_SHADER));
-    m_defaultCompute = Shader::GraphicsProgram({
-        Shader::shader(std::ifstream("shaders/pass_through.vert"), GL_VERTEX_SHADER),
-        Shader::shader(std::ifstream("shaders/tex2screen.frag"), GL_FRAGMENT_SHADER)});
+    m_window->setDrawFunc(m_drawFunc);
+    m_window->setGUIFunc(m_drawGUIFunc);
+    
+    std::ifstream computeFS("shaders/standard_render.comp");
+    Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
+    std::ifstream passthroughFS("shaders/pass_through.vert");
+    std::ifstream tex2ScreenFS("shaders/tex2screen.frag");
+    Shader::shader passthroughVertex(passthroughFS, GL_VERTEX_SHADER);
+    Shader::shader tex2ScreenFrag(tex2ScreenFS, GL_FRAGMENT_SHADER);
+    m_defaultCompute = Shader::ComputeProgram(computeShader);
+    m_tex2ScreenRender = Shader::GraphicsProgram({passthroughVertex, tex2ScreenFrag});
+        
+    computeFS.close();
+    passthroughFS.close();
+    tex2ScreenFS.close();
 
     m_renderUniformSize = glGetUniformLocation(m_tex2ScreenRender, "tex_size");
     if (m_renderUniformSize == INVALID_UNIFORM_LOCATION) {
@@ -47,51 +52,72 @@ Graphics::Graphics(int height, int width) {
 
     m_texOut = 0;
     m_timeOffset = 0;
+
+    m_params = (drawParams) {
+        m_window,
+        &m_sizeChanged,
+        &m_texOut,
+        &m_height,
+        &m_width,
+        &m_defaultCompute,
+        &m_tex2ScreenRender,
+        &m_timeOffset,
+        &m_gradientSpeed,
+        &m_computeUniformTime,
+        &m_renderUniformSize,
+        &m_quadVAO,
+        m_sliderQuad
+    };
+    m_window->setDrawParams((void*) &m_params);
+    m_window->setGUIParams((void*) &m_params);
 }
 
 Graphics::~Graphics() {
     glDeleteTextures(1, &m_texOut);
     glDeleteVertexArrays(1, &m_quadVAO);
+    delete m_window;
 }
 
-GUIWindow& Graphics::Window() {
+GUIWindow* Graphics::Window() {
     return m_window;
 }
 
-size_t Graphics::Height() {
+int Graphics::Height() {
     return m_height;
 }
 
-size_t Graphics::Width() {
+int Graphics::Width() {
     return m_width;
 }
 
 void Graphics::updateDimensions() {
-    SDL_GetWindowSize(m_window, &m_width, &m_height);
+    SDL_GetWindowSize(*m_window, &m_width, &m_height);
     m_sizeChanged = true;
 }
 
-void m_drawFunc(void* _params) {
-  int width = m_window.getWidth();
-  int height = m_window.getHeight();
+void Graphics::m_drawFunc(void* _params) {
+  drawParams* params = (drawParams*) _params;
+
+  int width = params->window->getWidth();
+  int height = params->window->getHeight();
   //this is made of memory leaks, should be stored in object 
   //when finalized for proper resource freeing
-  if (m_sizeChanged || m_texOut == 0) {
-    if (tex_out != 0) {
-      glDeleteTextures(1, &m_texOut);
+  if (*params->sizeChanged || *params->texOut == 0) {
+    if (*params->texOut != 0) {
+      glDeleteTextures(1, params->texOut);
     }
-    glGenTextures(1, &m_texOut);
+    glGenTextures(1, params->texOut);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_texOut);
+    glBindTexture(GL_TEXTURE_2D, *params->texOut);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width - 300, height, 0, GL_RGBA, GL_FLOAT, NULL);
-    glBindImageTexture(0, m_texOut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-    m_height = height;
-    m_width = width;
-    m_sizeChanged = false;
+    glBindImageTexture(0, *params->texOut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+    *params->height = height;
+    *params->width = width;
+    *params->sizeChanged = false;
   }
 
   //empty the window
@@ -100,12 +126,12 @@ void m_drawFunc(void* _params) {
   
   //compute the gradient
   {
-    m_defaultCompute.setActive();
-    m_timeOffset += m_gradientSpeed;
-    float i = std::sin(m_timeOffset);
+    params->computeProg->setActiveProgram();
+    *params->timeOffset += *params->gradientSpeed;
+    float i = std::sin(*params->timeOffset);
     i += 1.0f;
     i /= 2.0f;
-    glUniform1f(m_computeUniformTime, i);
+    glUniform1f(*params->uniformTime, i);
     glDispatchCompute((GLuint) width - 300, (GLuint) height, 1);
   }
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -114,26 +140,28 @@ void m_drawFunc(void* _params) {
   {
     glClear(GL_COLOR_BUFFER_BIT);
     glViewport(300, 0, width - 300, height);
-    m_tex2ScreenRender.setActiveProgram();
-    glUniform2f(renderUniformSize, (float) width, (float) height);
-    glBindVertexArray(m_quadVAO);
+    params->tex2ScreenProg->setActiveProgram();
+    glUniform2f(*params->uniformSize, (float) width, (float) height);
+    glBindVertexArray(*params->quadVAO);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_texOut);
+    glBindTexture(GL_TEXTURE_2D, *params->texOut);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   }
 }
 
 //draw the test panel
-void m_drawGUIFunc(void* _params) {
+void Graphics::m_drawGUIFunc(void* _params) {
+  drawParams* params = (drawParams*) _params;
+
   //start the frame
-  GUIWindow::NewFrame(m_window);
+  GUIWindow::NewFrame(*params->window);
 
   //set up styling and location
   ImGuiStyle& style = ImGui::GetStyle();
   style.WindowRounding = 0.0f;
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
-  int width = WindowWidth;
-  int height = WindowHeight;
+  int width = params->window->getWidth();
+  int height = params->window->getHeight();
   ImGui::SetNextWindowSize(ImVec2(300, height), ImGuiCond_Always);
 
   //begin the side panel
@@ -151,12 +179,12 @@ void m_drawGUIFunc(void* _params) {
   ImGui::Text("Important stuff will go here >.>");
 
   //block of configurable values
-  ImGui::SliderFloat("Gradient Speed", m_gradientSpeed, 0.0f, 0.1f);
+  ImGui::SliderFloat("Gradient Speed", params->gradientSpeed, 0.0f, 0.1f);
   for (int i = 0; i < 4; i++) {
-    ImGui::SliderFloat4("lol,", m_sliderQuad, 0, 42);
-    ImGui::SliderFloat4("random", m_sliderQuad, 0, 42);
+    ImGui::SliderFloat4("lol,", params->sliderQuad, 0, 42);
+    ImGui::SliderFloat4("random", params->sliderQuad, 0, 42);
     if (i != 3) { 
-      ImGui::SliderFloat4("sliders", m_sliderQuad, 0, 42);
+      ImGui::SliderFloat4("sliders", params->sliderQuad, 0, 42);
     }
   }
 

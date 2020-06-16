@@ -3,47 +3,51 @@
 
 #define INVALID_UNIFORM_LOCATION 0x7fffffff
 
-class Graphics;
-
 typedef struct {
-  GUIWindow* window;
-  float* vals;
-  float* speed;
-} guiParams;
-
-typedef struct {
-  GLuint computeProg;
-  GLuint renderProg;
-  float* speed;
-  Graphics* graphics;
-} graphicsParams;
+    GUIWindow* window;
+    bool* sizeChanged;
+    GLuint* texOut;
+    int* height;
+    int* width;
+    Shader::ComputeProgram* computeProg;
+    Shader::GraphicsProgram* tex2ScreenProg;
+    GLuint* timeOffset;
+    float* gradientSpeed;
+    GLuint* uniformTime;
+    GLuint* uniformSize;
+    GLuint* quadVAO;
+    float* sliderQuad;
+} drawParams;
 
 class Graphics {
 public:
     Graphics(int height, int width);
     ~Graphics();
 
-    GUIWindow& Window();
-    size_t Height();
-    size_t Width();
+    GUIWindow* Window();
+    int Height();
+    int Width();
     void updateDimensions();
 
 private:
     float m_sliderQuad[4];
     float m_gradientSpeed;
     bool m_sizeChanged;
-    size_t m_height;
-    size_t m_width;
-    static GLfloat s_quadVertexBufferData*;
+    int m_height;
+    int m_width;
+    static GLfloat s_quadVertexBufferData[8];
     GLuint m_quadVAO;
     GLuint m_texOut;
     GLuint m_timeOffset;
     
-    GUIWindow m_window;
-    void m_drawGUIFunc(void*);
-    void m_drawFunc(void*);
+    GUIWindow* m_window;
+    drawParams m_params;
+    static void m_drawGUIFunc(void*);
+    static void m_drawFunc(void*);
     
 
     Shader::GraphicsProgram m_tex2ScreenRender;
-    Shader::CopmuteProgram m_defaultCompute;
+    Shader::ComputeProgram m_defaultCompute;
+    GLuint m_computeUniformTime;
+    GLuint m_renderUniformSize;
 };

@@ -1,53 +1,55 @@
+#include "Application.h"
+
+TermFormatter::Formatter Application::s_green = TermFormatter::Formatter({TermFormatter::FG_Green});
+TermFormatter::Formatter Application::s_red = TermFormatter::Formatter({TermFormatter::FG_Red});
+TermFormatter::Formatter Application::s_reset = TermFormatter::Formatter({TermFormatter::ResetAll});
+
 Application::Application(int argc, char* argv[]) {
     m_params.height = 0;
     m_params.width = 0;
     m_params.fps_cap = 60;
-    if (!parseCMD(argc, argv, params)) {
+    if (!parseCMD(argc, argv)) {
         exit(-1);
     }
-    m_graphics = Graphics(m_params.height, m_params.width);
+    m_graphics = new Graphics(m_params.height, m_params.width);
 
-    m_green = TermFormatter::Formatter({TermFormatter::FG_Green});
-    m_red = TermFormatter::Formatter({TermFormatter::FG_Red});
-    m_reset = TermFormatter::Formatter({TermFormatter::ResetAll});
-
-    m_FPS = params.fps_cap;
+    m_FPS = m_params.fps_cap;
     m_frameCount = 0;
 }
 
 Application::~Application() {
-
+    delete m_graphics;
 }
 
 
-Application::run() {
+void Application::run() {
     Timer frameTimer;
     bool running = true;
     while (running) {
         frameTimer.start();
-        EventHandler::poll();
+        m_handler.poll();
 
-        for (auto event : EventHandler::events) {
-            m_graphics.Window().handleEvent(event);
+        for (auto event : m_handler.events) {
+            m_graphics->Window()->handleEvent(event);
             if (event.type == SDL_QUIT) {
                 running = false;
             }
         }
 
-        if (EventHandler::keyDown[EventHandler::keys::ESC] || m_graphics.Window().isHidden()) {
+        if (m_handler.keyDown[EventHandler::keys::ESC] || m_graphics->Window()->isHidden()) {
             running = false;
         }
 
         //update window
         if (running) {
             int newWidth, newHeight;
-            SDL_GetWindowSize(m_graphics.Window(), &newWidth, &newHeight);
-            if (newWidth != m_graphics.Height() || newHeight != m_graphics.Width()) {
-                m_graphics.updateDimensions();
+            SDL_GetWindowSize(*m_graphics->Window(), &newWidth, &newHeight);
+            if (newWidth != m_graphics->Height() || newHeight != m_graphics->Width()) {
+                m_graphics->updateDimensions();
             }
-            m_graphics.Window().draw();
-            m_graphics.Window().drawGUI();
-            m_graphics.Window().swap();
+            m_graphics->Window()->draw();
+            m_graphics->Window()->drawGUI();
+            m_graphics->Window()->swap();
         }
 
         auto endTime = (microseconds) frameTimer.getMicrosecondsElapsed();
@@ -56,15 +58,15 @@ Application::run() {
             float currFPS = 1.0f / (endTime.count() / 1000000);
             std::cout << "\r                      \r" << std::flush;
             if (currFPS >= m_FPS) {
-                std::cout << m_green << currFPS;
+                std::cout << s_green << currFPS;
             } else {
-                std::cout << m_red << currFPS;
+                std::cout << s_red << currFPS;
             }
             std::cout << std::flush;
         }
         m_frameCount++;
     }
-  std::cout << m_reset << '\r';
+  std::cout << s_reset << '\r';
 }
 
 bool Application::parseCMD(int argc, char* argv[]) {

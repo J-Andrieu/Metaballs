@@ -15,7 +15,7 @@ std::string resolveShaderType(GLenum shaderType) {
         case GL_COMPUTE_SHADER:
             return "GL_COMPUTE_SHADER";
         default:
-            return "INVALID_SHADER_TYPE"
+            return "INVALID_SHADER_TYPE";
     }
 }
 
@@ -30,11 +30,11 @@ shader::shader(GLenum shaderType) {
 	}
 }
 
-shader::shader(std::ifstream& shaderFile; GLenum shaderType) : shader(shaderType) {
+shader::shader(std::ifstream& shaderFile, GLenum shaderType) : shader(shaderType) {
     setSource(shaderFile);
 }
 
-shader::shader(std::string& shaderString; GLenum shaderType) : shader(shaderType) {
+shader::shader(std::string& shaderString, GLenum shaderType) : shader(shaderType) {
     setSource(shaderString);
 }
 
@@ -42,14 +42,14 @@ shader::~shader() {
     glDeleteShader(m_shaderObj);
 }
 
-void shader::setSource(GLsizei numStrings, GLchar** strings, GLint* lengths) {
+void shader::setSource(GLsizei numStrings, const GLchar** strings, GLint* lengths) {
     glShaderSource(m_shaderObj, numStrings, strings, lengths);
 }
 
 void shader::setSource(std::string& shaderString) {
     const GLchar* p[1];
-    p[0] = shader.c_str();
-    GLint lengths[1] = { (GLint) shader.size() }
+    p[0] = shaderString.c_str();
+    GLint lengths[1] = { (GLint) shaderString.size() };
 
     setSource(1, p, lengths);
 }
@@ -57,8 +57,8 @@ void shader::setSource(std::string& shaderString) {
 void shader::setSource(std::ifstream& shaderFile) {
     std::stringstream buffer;
     buffer << shaderFile.rdbuf();
-
-    setSource(buffer.str());
+    std::string shaderSource = buffer.str();
+    setSource(shaderSource);
 }
 
 void shader::compile() {
@@ -69,7 +69,7 @@ void shader::compile() {
 
     if (!success) {
 		GLchar log[1024];
-		glGetShaderInfoLog(shaderObj, 1024, NULL, log);
+		glGetShaderInfoLog(m_shaderObj, 1024, NULL, log);
 		std::cerr << "Error compiling: " << log << std::endl;
         throw std::runtime_error(std::string("Error compiling shader of type ") + resolveShaderType(m_shaderType));
 	}
@@ -136,11 +136,15 @@ GraphicsProgram::operator GLuint() {
 }
 
 ComputeProgram::ComputeProgram() {
-    m_program = glCreateProgram()
+    m_program = glCreateProgram();
 }
 
-ComputeProgram::ComputeProgram(shader& shaderObj) : ComputeShader() {
+ComputeProgram::ComputeProgram(shader& shaderObj) : ComputeProgram() {
     attachShader(shaderObj);
+}
+
+ComputeProgram::~ComputeProgram() {
+    glDeleteProgram(m_program);
 }
 
 void ComputeProgram::attachShader(shader& shaderObj) {
@@ -169,12 +173,16 @@ void ComputeProgram::build() {
 	}
 }
 
+void ComputeProgram::setActiveProgram() {
+    glUseProgram(m_program);
+}
+
 void ComputeProgram::dispatch(GLuint x, GLuint y, GLuint z) {
-    glDispatchCompute(m_program, x, y, z);
+    glDispatchCompute(x, y, z);
 }
 
 void ComputeProgram::dispatchIndirect(GLintptr indirect) {
-    glDispatchComputeIndirect(m_program, indirect);
+    glDispatchComputeIndirect(indirect);
 }
 
 GLuint ComputeProgram::program() {

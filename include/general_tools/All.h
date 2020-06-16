@@ -1,3 +1,6 @@
+#ifndef GENERAL_TOOLS_H
+#define GENERAL_TOOLS_H
+
 //Debug things
 #include "Timer.h"
 
@@ -7,4 +10,6 @@
 
 //Graphics
 #include "GUIWindow.h" //includes Window.h and ImGui headers. Links w/ SDL2, OpenGL, and GLEW
-#include "EventHandler.hpp" //Links w/ SDL2
+#include "EventHandler.h" //Links w/ SDL2
+
+#endif /* GENERAL_TOOLS_H */

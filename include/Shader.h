@@ -16,7 +16,7 @@ namespace Shader {
 
         ~shader();
 
-        void setSource(GLsizei numStrings, GLchar** strings, GLint* lengths);
+        void setSource(GLsizei numStrings, const GLchar** strings, GLint* lengths);
         void setSource(std::ifstream& shaderFile);
         void setSource(std::string& shaderString);
         
@@ -28,7 +28,7 @@ namespace Shader {
     private:
         GLenum m_shaderType;
         GLuint m_shaderObj;
-    }
+    };
 
     class GraphicsProgram {
     public:
@@ -49,16 +49,17 @@ namespace Shader {
         GLuint m_program;
     };
 
-    class CopmuteProgram {
+    class ComputeProgram {
     public:
-        CopmuteProgram();
-        CopmuteProgram(shader& shaderObj);
+        ComputeProgram();
+        ComputeProgram(shader& shaderObj);
 
-        ~CopmuteProgram();
+        ~ComputeProgram();
 
         void attachShader(shader& shaderObj);
         void build();
 
+        void setActiveProgram();
         void dispatch(GLuint x, GLuint y, GLuint z);
         void dispatchIndirect(GLintptr indirect);
 

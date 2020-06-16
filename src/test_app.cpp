@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include "GUIWindow.h"
-#include "EventHandler.hpp"
+#include "EventHandler.h"
 #include "Timer.h"
 #include "CMDParser.h"
 #include "TermFormatter.hpp"
@@ -194,6 +194,8 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
+  EventHandler handler;
+
   //set up frame capping
   float FPS = params.fps_cap;
   seconds FRAME_TIME = (seconds) 1.0f/FPS;
@@ -250,16 +252,16 @@ int main(int argc, char* argv[]) {
   bool running = true;
   while (running) {
     frame_timer.start();
-    EventHandler::poll();
+    handler.poll();
 
-    for (auto event : EventHandler::events) {
+    for (auto event : handler.events) {
       MainWindow.handleEvent(event);
       if (event.type == SDL_QUIT) {
         running = false;
       }
     }
 
-    if (EventHandler::keyDown[EventHandler::keys::ESC] || MainWindow.isHidden()) {
+    if (handler.keyDown[EventHandler::keys::ESC] || MainWindow.isHidden()) {
       running = false;
     }
 

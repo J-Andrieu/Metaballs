@@ -14,18 +14,19 @@ public:
     Application(int argc, char* argv[]);
     ~Application();
 
-    run();
+    void run();
 
 private:
     cmdParams m_params;
     bool parseCMD(int argc, char* argv[]);
 
-    TermFormatter::Formatter m_green;
-    TermFormatter::Formatter m_red;
-    TermFormatter::Formatter m_reset;
+    static TermFormatter::Formatter s_green;
+    static TermFormatter::Formatter s_red;
+    static TermFormatter::Formatter s_reset;
 
     float m_FPS;
     size_t m_frameCount;
 
-    Graphics m_graphics;
+    Graphics* m_graphics;
+    EventHandler m_handler;
 };
