@@ -46,8 +46,8 @@ private:
     static void m_drawFunc(void*);
     
 
-    Shader::GraphicsProgram m_tex2ScreenRender;
-    Shader::ComputeProgram m_defaultCompute;
+    Shader::GraphicsProgram* m_tex2ScreenRender;
+    Shader::ComputeProgram* m_defaultCompute;
     GLuint m_computeUniformTime;
     GLuint m_renderUniformSize;
 };

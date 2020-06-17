@@ -55,10 +55,22 @@ void shader::setSource(std::string& shaderString) {
 }
 
 void shader::setSource(std::ifstream& shaderFile) {
+#if 1
     std::stringstream buffer;
     buffer << shaderFile.rdbuf();
-    std::string shaderSource = buffer.str();
-    setSource(shaderSource);
+    m_shaderSource = buffer.str();
+
+    setSource(m_shaderSource);
+#else
+    shaderFile.seekg(0, std::ios::end);
+    std::streampos fileLen = shaderFile.tellg();
+    shaderFile.seekg(0, std::ios::beg);
+
+    m_shaderSource.reserve(fileLen);
+
+    shaderFile.read(m_shaderSource.data(), fileLen);
+    setSource(m_shaderSource);
+#endif
 }
 
 void shader::compile() {
@@ -85,6 +97,10 @@ shader::operator GLuint() {
 
 GraphicsProgram::GraphicsProgram() {
     m_program = glCreateProgram();
+
+    if (m_program == 0) {
+		throw std::runtime_error(std::string("Error creating shader program"));
+	}
 }
 
 GraphicsProgram::GraphicsProgram(std::initializer_list<shader> shaders) : GraphicsProgram() {
@@ -137,6 +153,10 @@ GraphicsProgram::operator GLuint() {
 
 ComputeProgram::ComputeProgram() {
     m_program = glCreateProgram();
+
+    if (m_program == 0) {
+		throw std::runtime_error(std::string("Error creating shader program"));
+	}
 }
 
 ComputeProgram::ComputeProgram(shader& shaderObj) : ComputeProgram() {

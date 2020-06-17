@@ -11,6 +11,7 @@ Application::Application(int argc, char* argv[]) {
     if (!parseCMD(argc, argv)) {
         exit(-1);
     }
+
     m_graphics = new Graphics(m_params.height, m_params.width);
 
     m_FPS = m_params.fps_cap;

@@ -16,25 +16,30 @@ Graphics::Graphics(int height, int width) {
     m_sliderQuad[3] = 9001;
     m_window->setDrawFunc(m_drawFunc);
     m_window->setGUIFunc(m_drawGUIFunc);
-    
-    std::ifstream computeFS("shaders/standard_render.comp");
-    Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
+
     std::ifstream passthroughFS("shaders/pass_through.vert");
     std::ifstream tex2ScreenFS("shaders/tex2screen.frag");
     Shader::shader passthroughVertex(passthroughFS, GL_VERTEX_SHADER);
     Shader::shader tex2ScreenFrag(tex2ScreenFS, GL_FRAGMENT_SHADER);
-    m_defaultCompute = Shader::ComputeProgram(computeShader);
-    m_tex2ScreenRender = Shader::GraphicsProgram({passthroughVertex, tex2ScreenFrag});
-        
-    computeFS.close();
+    passthroughVertex.compile();
+    tex2ScreenFrag.compile();
+    m_tex2ScreenRender = new Shader::GraphicsProgram({passthroughVertex, tex2ScreenFrag});
+    m_tex2ScreenRender->build();
     passthroughFS.close();
     tex2ScreenFS.close();
 
-    m_renderUniformSize = glGetUniformLocation(m_tex2ScreenRender, "tex_size");
+    std::ifstream computeFS("shaders/standard_render.comp");
+    Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
+    computeShader.compile();
+    m_defaultCompute = new Shader::ComputeProgram(computeShader);
+    m_defaultCompute->build();
+    computeFS.close();
+
+    m_renderUniformSize = glGetUniformLocation(*m_tex2ScreenRender, "tex_size");
     if (m_renderUniformSize == INVALID_UNIFORM_LOCATION) {
         throw std::runtime_error(std::string("Uniform time could not be found"));
     }
-    m_computeUniformTime = glGetUniformLocation(m_defaultCompute, "time");
+    m_computeUniformTime = glGetUniformLocation(*m_defaultCompute, "time");
     if (m_computeUniformTime == INVALID_UNIFORM_LOCATION) {
         throw std::runtime_error(std::string("Uniform time could not be found"));
     }
@@ -59,8 +64,8 @@ Graphics::Graphics(int height, int width) {
         &m_texOut,
         &m_height,
         &m_width,
-        &m_defaultCompute,
-        &m_tex2ScreenRender,
+        m_defaultCompute,
+        m_tex2ScreenRender,
         &m_timeOffset,
         &m_gradientSpeed,
         &m_computeUniformTime,

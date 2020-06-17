@@ -26,6 +26,7 @@ namespace Shader {
         operator GLuint();
     
     private:
+        std::string m_shaderSource;//for initializing from file
         GLenum m_shaderType;
         GLuint m_shaderObj;
     };
