@@ -68,6 +68,7 @@ private:
     void* m_drawParams;
 
     static int s_windowCount;
+    static bool s_glewInitialized;
 };
 
 #endif /* WINDOW_H */

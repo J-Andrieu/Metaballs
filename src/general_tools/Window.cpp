@@ -1,6 +1,7 @@
 #include <Window.h>
 
 int Window::s_windowCount = 0;
+bool Window::s_glewInitialized = false;
 
 Window::Window(const std::string& name, size_t height, size_t width, int sdlWindowFlags) :
     m_window(nullptr), m_drawParams(nullptr) {
@@ -53,6 +54,16 @@ Window::Window(const std::string& name, size_t height, size_t width, int sdlWind
     if (SDL_GL_SetSwapInterval(1) < 0) {
         std::string msg = std::string("Unable to use VSync: ") + SDL_GetError();
         throw(std::runtime_error(msg));
+    }
+
+    if (!s_glewInitialized) {
+        s_glewInitialized = true;
+        GLenum err = glewInit();
+
+        if (err != GLEW_OK) {
+            std::string msg = std::string("GLEW Error: ") + std::string((char*) glewGetErrorString(err));
+		    throw(std::runtime_error(msg));
+        }
     }
 }
 
