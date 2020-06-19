@@ -10,11 +10,6 @@ GUIWindow::GUIWindow(const std::string &name, size_t height, size_t width, int s
     s_exists = true;
 
     //initialize ImGUI
-    auto status = glewInit();
-    if (status != GLEW_OK) {
-        std::string msg = std::string("GLEW Error: ") + std::string((char*) glewGetErrorString(status));
-		throw(std::runtime_error(msg));
-    }
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
