@@ -3,6 +3,8 @@
 
 #define INVALID_UNIFORM_LOCATION 0x7fffffff
 
+//struct to hold pointers to all class members
+//required by the rendering functions
 typedef struct {
     GUIWindow* window;
     bool* sizeChanged;
@@ -11,7 +13,7 @@ typedef struct {
     int* width;
     Shader::ComputeProgram* computeProg;
     Shader::GraphicsProgram* tex2ScreenProg;
-    GLuint* timeOffset;
+    float* timeOffset;
     float* gradientSpeed;
     GLuint* uniformTime;
     GLuint* uniformSize;
@@ -30,6 +32,7 @@ public:
     void updateDimensions();
 
 private:
+    //members utilized by rendering functions
     float m_sliderQuad[4];
     float m_gradientSpeed;
     bool m_sizeChanged;
@@ -38,14 +41,15 @@ private:
     static GLfloat s_quadVertexBufferData[8];
     GLuint m_quadVAO;
     GLuint m_texOut;
-    GLuint m_timeOffset;
+    float m_timeOffset;
     
+    //members related to the main window
     GUIWindow* m_window;
     drawParams m_params;
     static void m_drawGUIFunc(void*);
     static void m_drawFunc(void*);
     
-
+    //shader variables
     Shader::GraphicsProgram* m_tex2ScreenRender;
     Shader::ComputeProgram* m_defaultCompute;
     GLuint m_computeUniformTime;

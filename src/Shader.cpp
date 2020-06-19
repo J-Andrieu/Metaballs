@@ -56,12 +56,14 @@ void shader::setSource(std::string& shaderString) {
 
 void shader::setSource(std::ifstream& shaderFile) {
 #if 1
+    //use string stream to read in entire file
     std::stringstream buffer;
     buffer << shaderFile.rdbuf();
     m_shaderSource = buffer.str();
 
     setSource(m_shaderSource);
 #else
+    //reserve string same size as file then read in the file
     shaderFile.seekg(0, std::ios::end);
     std::streampos fileLen = shaderFile.tellg();
     shaderFile.seekg(0, std::ios::beg);

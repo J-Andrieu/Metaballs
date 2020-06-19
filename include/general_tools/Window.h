@@ -10,13 +10,21 @@
 #include <stdexcept>
 #include <functional>
 
+/** Window class
+ *  @class Window
+ * 
+ *  @note Requires OpenGL 4.3+ and SDL2
+ *  @note Cannot be copied, move semantics only
+ */
 class Window {
 public:
-    Window() = delete;
+    Window() = delete; ///< No default constructor, would be a bit useless
     Window(const std::string& name, size_t height, size_t width, int sdlWindowFlags = DefaultWindowFlags());
     ~Window();
 
     //No copying allowed! >:( (moving is probs ok tho)
+    //Window(Window&& other);
+    //Window& operator=(Window&& other);
     Window(const Window& other) = delete;
     Window& operator=(const Window& other) = delete;
 
@@ -52,21 +60,26 @@ public:
     operator SDL_Window*();
 
 protected:
+    //SDL window and context are only protected so derived classes can use them
     SDL_Window* m_window;
     SDL_GLContext m_context;
 
 private:
+    //Basic window information
     std::string m_name;
     size_t m_height;
     size_t m_width;
 
+    //Window visibility tracking
     bool m_shown;
     bool m_minimized;
     bool m_hidden;
 
+    //Stored function and params for drawing into the window
     std::function<void(void*)> m_drawFunc;
     void* m_drawParams;
 
+    //Static variables for tracking global window status
     static int s_windowCount;
     static bool s_glewInitialized;
 };

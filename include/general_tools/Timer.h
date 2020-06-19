@@ -13,36 +13,49 @@
 typedef std::chrono::high_resolution_clock hresClock;
 typedef hresClock::time_point hresClockTimePoint;
 
+/** Timers namespace
+ *  @namespace Timers
+ * 
+ *  @note Not required to access Timer class, intended for
+ *        storing named scope timers for later access
+ */
 namespace Timers {
     void logNamedTimers();
     void setLogFile(std::string);
 
+    /// Timer scope struct
     typedef struct {
-        std::string m_scopeName;
-        long long* m_executionTime;
+        std::string m_scopeName; ///< The name given to the time
+        long long* m_executionTime; ///< How long the timer was active
     } timerScope;
 
-    static std::vector<timerScope> named_timers;
-    static std::string out_file = "";
-    static bool toScreen = false;
+    static std::vector<timerScope> named_timers; ///< Vector of named scope timer execution times
+    static std::string out_file = ""; ///< File for storing a timer log
+    static bool toScreen = false; ///< Whether or not timers should be logged to the console
 }
 
+/** Timer class
+ *  @class Timer
+ * 
+ *  @note Should rewrite timer class to return std::chrono duration by default
+ */
 class Timer {
 public:
-    //class constructor
+    ///Class constructor
     Timer();
-    Timer(long long& out);//scope resolution timer
-    Timer(std::string scopeName);//named scope resolution timer
+    Timer(long long& out);///< Scope resolution timer
+    Timer(std::string scopeName);///< Named scope resolution timer
+    ///Class destructor
     ~Timer();
 
     //retrieve relative time
-    void start(); //sets internal time point
-    long long getMicrosecondsElapsed(); //returns microseconds since timer was created, or last start() call
-    static long long getMicrosecondsSince (hresClockTimePoint t1); //returns microseconds since provided time point
+    void start(); ///< Sets internal time point
+    long long getMicrosecondsElapsed(); ///< Returns microseconds since timer was created, or last start() call
+    static long long getMicrosecondsSince (hresClockTimePoint t1); ///< Returns microseconds since provided time point
 
     //wait
-    bool compareElapsedMicroseconds (const long long& microseconds); //returns true if specified time has elapsed;
-    static inline void sleepMicroseconds (const long long& microseconds); //waits for specified time period
+    bool compareElapsedMicroseconds (const long long& microseconds); ///< Returns true if specified time has elapsed;
+    static inline void sleepMicroseconds (const long long& microseconds); //< Waits for specified time period
     template<typename Rep, typename Period>
     static inline void wait(std::chrono::duration<Rep, Period> length) { //don't forget abt std::chrono's literals >.>
       //hresClockTimePoint end = hresClock::now() + length;
@@ -51,13 +64,13 @@ public:
     }
 
     //retrieve current time
-    static hresClockTimePoint getCurrentTime(); //returns current time as hresClockTimePoint
+    static hresClockTimePoint getCurrentTime(); ///< returns current time as hresClockTimePoint
 
 private:
     hresClockTimePoint m_initialTime;
-    long long* m_out;
+    long long* m_out; ///< Storage location for length timer was active
 };
 
 
-#endif
+#endif /* TIMER_H */
 

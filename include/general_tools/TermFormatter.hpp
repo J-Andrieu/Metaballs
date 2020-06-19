@@ -5,7 +5,13 @@
 #include <sstream>
 #include <variant>
 
+/** Namespace for holding tools to format command line output
+ *  @namespace TermFormatter
+ * 
+ *  @note This is intended to format colors, not spacing
+ */
 namespace TermFormatter {
+    ///Enum for basic terminal color formats
     enum Mod {
         //format
         Bright = 1,
@@ -60,29 +66,49 @@ namespace TermFormatter {
         BG_White = 107
     };
 
+    //Enum to declare a foreground or background color
     enum FG_BG {
         FG = 38,
         BG = 48
     };
 
+    /** A class for defining a custom color format
+     *  @class CustomColor
+     * 
+     *  @note Intended for use in constructing a Formatter object
+     */
     class CustomColor {
     public:
         friend class Formatter;
 
-        //color at index in the 88/256 color tble
+        /** CustomColor constructor
+         *  @param fg_bg Foreground or background color?
+         *  @param index Index in the 88/256 color table
+         */
         CustomColor(FG_BG fg_bg, uint8_t index) {
             std::ostringstream init_str;
             init_str << fg_bg << ";5;" << (int) index;
             m_colorString = init_str.str();
         }
 
-        //custom RGB
+        /** CustomColor Constructor
+         *  @param fg_bg Foreground or background color?
+         *  @param r Red componenet of color
+         *  @param g Green componenet of color
+         *  @param b Blue component of color
+         */
         CustomColor(FG_BG fg_bg, uint8_t r, uint8_t g, uint8_t b) {
             std::ostringstream init_str;
             init_str << fg_bg << ";2;" << (int) r << ";" << (int) g << ";" << (int) b;
             m_colorString = init_str.str();
         }
 
+        /** std::ostream operator<< overload for CustomColor
+         *  @param out The std::ostream to format
+         *  @param color The desired color format
+         * 
+         *  @note Converts stored string an independent format string
+         */
         friend std::ostream& operator<<(std::ostream& out, const CustomColor& color) {
             return out << "\x1b[" << color.m_colorString << "m";
         }
@@ -90,8 +116,15 @@ namespace TermFormatter {
         std::string m_colorString;
     };
 
+    /** A class for constructing a terminal format string
+     *  @class Formatter
+     */
     class Formatter {
     public:
+        /** Formatter constructor
+         *  @param modifiers Initializer list of Mod enum values and CustomColors 
+         *                   for creating the format string
+         */
         Formatter(std::initializer_list<std::variant<Mod, CustomColor>> modifiers) {
             std::ostringstream init_str;
             init_str << "\x1b[";
@@ -111,14 +144,22 @@ namespace TermFormatter {
             m_modString = init_str.str();
         }
 
+        ///Returns internal format string
         std::string getString() const {
             return m_modString;
         }
         
+        ///Returns internal format string
         operator std::string() const {
             return m_modString;
         }
 
+        /** std::ostream operator<< overload for Formatter
+         *  @param out The std::ostream to format
+         *  @param formatter The desired format
+         * 
+         *  @note It literally just prints a format string to the designated ostream
+         */
         friend std::ostream& operator<<(std::ostream& out, const Formatter& formatter) {
             return out << formatter.m_modString;
         }

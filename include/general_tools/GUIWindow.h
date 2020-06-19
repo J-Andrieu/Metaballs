@@ -18,6 +18,8 @@ public:
     ~GUIWindow();
 
     //Only one! >.>
+    //GUIWindow(GUIWindow&& other);
+    //GUIWindow& operator=(GUIWindow&& other);
     GUIWindow(const GUIWindow& other) = delete;
     GUIWindow& operator=(const GUIWindow& other) = delete;
 

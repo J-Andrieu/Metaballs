@@ -2,13 +2,16 @@
 
 GLfloat Graphics::s_quadVertexBufferData[8] = {-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f};
 
-Graphics::Graphics(int height, int width) {
-    m_sizeChanged = true;
+Graphics::Graphics(int height, int width) : 
+m_height(height), m_width(m_width), m_texOut(0), m_timeOffset(0), m_sizeChanged(true) {
+
+    //initialize the window
     m_window = new GUIWindow("Metaballs", height, width, Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
     SDL_SetWindowMinimumSize(*m_window, 700, 400);
     SDL_GL_MakeCurrent(*m_window, m_window->getContext());
     ImGui::StyleColorsDark();
 
+    //attach window draw functions
     m_gradientSpeed = 0.01f;
     m_sliderQuad[0] = 42;
     m_sliderQuad[1] = 69;
@@ -17,6 +20,7 @@ Graphics::Graphics(int height, int width) {
     m_window->setDrawFunc(m_drawFunc);
     m_window->setGUIFunc(m_drawGUIFunc);
 
+    //prepare the graphics pipeline
     std::ifstream passthroughFS("shaders/pass_through.vert");
     std::ifstream tex2ScreenFS("shaders/tex2screen.frag");
     Shader::shader passthroughVertex(passthroughFS, GL_VERTEX_SHADER);
@@ -28,6 +32,7 @@ Graphics::Graphics(int height, int width) {
     passthroughFS.close();
     tex2ScreenFS.close();
 
+    //prepare the compute shader
     std::ifstream computeFS("shaders/standard_render.comp");
     Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
     computeShader.compile();
@@ -35,6 +40,7 @@ Graphics::Graphics(int height, int width) {
     m_defaultCompute->build();
     computeFS.close();
 
+    //attach uniform variables to shaders
     m_renderUniformSize = glGetUniformLocation(*m_tex2ScreenRender, "tex_size");
     if (m_renderUniformSize == INVALID_UNIFORM_LOCATION) {
         throw std::runtime_error(std::string("Uniform time could not be found"));
@@ -44,6 +50,7 @@ Graphics::Graphics(int height, int width) {
         throw std::runtime_error(std::string("Uniform time could not be found"));
     }
     
+    //prepare vertex array
     glGenVertexArrays(1, &m_quadVAO);
     glBindVertexArray(m_quadVAO);
     GLuint quadVBO;
@@ -55,9 +62,7 @@ Graphics::Graphics(int height, int width) {
     glBindVertexArray(0);    
     glDeleteBuffers(1, &quadVBO);
 
-    m_texOut = 0;
-    m_timeOffset = 0;
-
+    //attach parameters for drawing functions to windows
     m_params = (drawParams) {
         m_window,
         &m_sizeChanged,
