@@ -86,6 +86,8 @@ Graphics::~Graphics() {
     glDeleteTextures(1, &m_texOut);
     glDeleteVertexArrays(1, &m_quadVAO);
     delete m_window;
+    delete m_tex2ScreenRender;
+    delete m_defaultCompute;
 }
 
 GUIWindow* Graphics::Window() {

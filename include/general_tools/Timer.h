@@ -57,6 +57,9 @@ public:
     bool compareElapsedMicroseconds (const long long& microseconds); ///< Returns true if specified time has elapsed;
     static inline void sleepMicroseconds (const long long& microseconds); //< Waits for specified time period
     template<typename Rep, typename Period>
+    /** Sleeps for the requuested amount of time
+     *  @param length How long to wait for
+     */
     static inline void wait(std::chrono::duration<Rep, Period> length) { //don't forget abt std::chrono's literals >.>
       //hresClockTimePoint end = hresClock::now() + length;
       //while(hresClock::now() < end);

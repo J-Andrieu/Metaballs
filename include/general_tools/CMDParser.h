@@ -11,6 +11,8 @@
 
 /** CMDParser class for parsing command line
  *  @class CMDParser
+ * 
+ *  @note Only handles the following types: int, double, bool, std::string
  */
 class CMDParser {
 public:

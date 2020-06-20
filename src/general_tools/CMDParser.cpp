@@ -3,6 +3,7 @@
 
 #include "CMDParser.h"
 
+///CMDParser default constructor
 CMDParser::CMDParser() {
     m_params.resize (0);
     bindVar<bool> ("-h", help, 0, "Displays the help page");
@@ -10,10 +11,22 @@ CMDParser::CMDParser() {
     custom_help = "";
 }
 
+///Operator== overload to help with searching for parameter strings
 bool operator== (CMDParser::_container A, std::string B) {
     return A._flag == B;
 }
 
+/** Parses command line arguments
+ *  Takes values from the command line and stores them
+ *  in their respective bound variables
+ * 
+ *  @param argc The number of cstrings being passed
+ *  @param argv The array of cstrings to be parsed
+ * 
+ *  @return true if all arguments passed are expeccted, and formatted validly
+ * 
+ *  @note Returns early if an invalid parameter is met and prints the help message
+ */
 bool CMDParser::parse (int argc, char* argv[]) {
     std::sort (m_params.begin(), m_params.end(), [] (auto A, auto B) {
         return A._flag < B._flag;
@@ -108,6 +121,22 @@ bool CMDParser::parse (int argc, char* argv[]) {
     return true;
 }
 
+/** Sets a custom help message for the parser
+ *  @note Does not disable the generated help message
+ */
+void CMDParser::setHelpMessage(std::string msg) {
+    custom_help = msg;
+}
+
+///Sets whether the parser should generate a help message
+void CMDParser::generateHelp(bool val) {
+    generate_help = val;
+}
+
+/** Prints out the help menu
+ *  The help menu will be generated from the provided descriptions, 
+ *  or it can be bypassed with the generateHelp() function
+ */
 void CMDParser::printHelp() {
     if (custom_help.length() != 0) {
         printf("%s\n", custom_help.c_str());

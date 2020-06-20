@@ -11,6 +11,12 @@
 
 #include <cassert>
 
+/** Window class that initializes ImGui
+ *  @class Window
+ * 
+ *  @note Requires OpenGL 4.3+ and SDL2
+ *  @note Cannot be copied, move semantics only
+ */
 class GUIWindow : public Window {
 public:
     GUIWindow() = delete;
