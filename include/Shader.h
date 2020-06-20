@@ -43,21 +43,13 @@ namespace Shader {
         GLuint m_shaderObj;
     };
 
-    /** Class for storing a graphics pipeline shader program
-     *  @class GraphicsProgram
-     */
-    class GraphicsProgram {
+    ///Base class for OpenGL program containers
+    class ProgramBase {
+    protected:
+        ProgramBase();
+        ~ProgramBase();
+        
     public:
-        GraphicsProgram();
-        GraphicsProgram(std::initializer_list<shader> shaders);
-
-        GraphicsProgram(GraphicsProgram&& program);
-        GraphicsProgram& operator=(GraphicsProgram&& program);
-        GraphicsProgram(const GraphicsProgram& program) = delete;
-        GraphicsProgram& operator=(const GraphicsProgram& program) = delete;
-
-        ~GraphicsProgram();
-
         void attachShader(shader& shaderObj);
         void build();
 
@@ -68,14 +60,35 @@ namespace Shader {
 
     private:
         GLuint m_program;
+
+    };
+
+    /** Class for storing a graphics pipeline shader program
+     *  @class GraphicsProgram
+     */
+    class GraphicsProgram : public ProgramBase {
+    public:
+        /** GraphicsProgram default constructor
+          *  @note Throws a runtime error if a program can't be created
+          */
+        GraphicsProgram() : ProgramBase() {};
+        GraphicsProgram(std::initializer_list<shader> shaders);
+
+        GraphicsProgram(GraphicsProgram&& program);
+        GraphicsProgram& operator=(GraphicsProgram&& program);
+        GraphicsProgram(const GraphicsProgram& program) = delete;
+        GraphicsProgram& operator=(const GraphicsProgram& program) = delete;
     };
 
     /** Class for storing a compute shader program
      *  @class ComputeProgram
      */
-    class ComputeProgram {
+    class ComputeProgram : public ProgramBase {
     public:
-        ComputeProgram();
+        /** ComputeProgram default constructor
+          *  @note Throws a runtime error if a program can't be created
+          */
+        ComputeProgram() : ProgramBase() {};
         ComputeProgram(shader& shaderObj);
 
         ComputeProgram(ComputeProgram&& program);
@@ -83,20 +96,8 @@ namespace Shader {
         ComputeProgram(const ComputeProgram& program) = delete;
         ComputeProgram& operator=(const ComputeProgram& program) = delete;
 
-        ~ComputeProgram();
-
-        void attachShader(shader& shaderObj);
-        void build();
-
-        void setActiveProgram();
         void dispatch(GLuint x, GLuint y, GLuint z);
         void dispatchIndirect(GLintptr indirect);
-
-        GLuint program();
-        operator GLuint();
-
-    private:
-        GLuint m_program;
     };
 
 };

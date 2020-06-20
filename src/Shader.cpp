@@ -132,15 +132,67 @@ shader::operator GLuint() {
     return m_shaderObj;
 }
 
-/** GraphicsProgram default constructor
+/** ProgramBase constructor
  *  @note Throws a runtime error if a program can't be created
  */
-GraphicsProgram::GraphicsProgram() {
+ProgramBase::ProgramBase() {
     m_program = glCreateProgram();
 
     if (m_program == 0) {
 		throw std::runtime_error(std::string("Error creating shader program"));
 	}
+}
+
+///ProgramBase destructor
+ProgramBase::~ProgramBase() {
+    glDeleteProgram(m_program);
+}
+
+/** Attaches a shader to the program
+ *  @param shaderObj The shader to attach to the program
+ */
+void ProgramBase::attachShader(shader& shaderObj) {
+    glAttachShader(m_program, shaderObj);
+}
+
+/** Links the program
+ *  @note Throws a runtime error if linking fails or the program is invalid
+ */
+void ProgramBase::build() {
+    GLint success = 0;
+	GLchar errorLog[1024] = { 0 };
+
+	glLinkProgram (m_program);
+
+    glGetProgramiv(m_program, GL_LINK_STATUS, &success);
+	if (success == 0) {
+		glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
+		std::cerr << "Error linking shader program: " << errorLog << std::endl;
+		throw std::runtime_error(std::string("Error linking graphical shader program"));
+	}
+
+    glValidateProgram(m_program);
+	glGetProgramiv(m_program, GL_VALIDATE_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
+		std::cerr << "Invalid shader program: " << errorLog << std::endl;
+		throw std::runtime_error(std::string("Rendering pipeline program is invalid"));
+	}
+}
+
+///Sets the calling program as the active program for OpenGL
+void ProgramBase::setActiveProgram() {
+    glUseProgram(m_program);
+}
+
+///Returns the GLuint program for OpenGL/GLEW functions
+GLuint ProgramBase::program() {
+    return m_program;
+}
+
+///Casts to a GLuint program for OpenGL/GLEW functions
+ProgramBase::operator GLuint() {
+    return m_program;
 }
 
 /** GraphicsProgram parametarized constructor
@@ -154,69 +206,6 @@ GraphicsProgram::GraphicsProgram(std::initializer_list<shader> shaders) : Graphi
     }
 }
 
-///GraphicsProgram destructor
-GraphicsProgram::~GraphicsProgram() {
-    glDeleteProgram(m_program);
-}
-
-/** Attaches a shader to the program
- *  @param shaderObj The shader to attach to the program
- */
-void GraphicsProgram::attachShader(shader& shaderObj) {
-    glAttachShader(m_program, shaderObj);
-}
-
-/** Links the program
- *  @note Throws a runtime error if linking fails or the program is invalid
- */
-void GraphicsProgram::build() {
-    GLint success = 0;
-	GLchar errorLog[1024] = { 0 };
-
-	glLinkProgram (m_program);
-
-    glGetProgramiv(m_program, GL_LINK_STATUS, &success);
-	if (success == 0) {
-		glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
-		std::cerr << "Error linking shader program: " << errorLog << std::endl;
-		throw std::runtime_error(std::string("Error linking graphical shader program"));
-	}
-
-    glValidateProgram(m_program);
-	glGetProgramiv(m_program, GL_VALIDATE_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
-		std::cerr << "Invalid shader program: " << errorLog << std::endl;
-		throw std::runtime_error(std::string("Rendering pipeline program is invalid"));
-	}
-}
-
-///Sets the calling program as the active program for OpenGL
-void GraphicsProgram::setActiveProgram() {
-    glUseProgram(m_program);
-}
-
-///Returns the GLuint program for OpenGL/GLEW functions
-GLuint GraphicsProgram::program() {
-    return m_program;
-}
-
-///Casts to a GLuint program for OpenGL/GLEW functions
-GraphicsProgram::operator GLuint() {
-    return m_program;
-}
-
-/** ComputeProgram default constructor
- *  @note Throes a runtime error if a program can't be created
- */
-ComputeProgram::ComputeProgram() {
-    m_program = glCreateProgram();
-
-    if (m_program == 0) {
-		throw std::runtime_error(std::string("Error creating shader program"));
-	}
-}
-
 /** ComputeProgram parameterized constructor
  *  @param shaderObj The compute shader to attach to the program
  *  
@@ -224,48 +213,6 @@ ComputeProgram::ComputeProgram() {
  */
 ComputeProgram::ComputeProgram(shader& shaderObj) : ComputeProgram() {
     attachShader(shaderObj);
-}
-
-///Compute shader destructor
-ComputeProgram::~ComputeProgram() {
-    glDeleteProgram(m_program);
-}
-
-/** Attaches a shader to the program
- *  @param shaderObj The shader to attach to the program
- */
-void ComputeProgram::attachShader(shader& shaderObj) {
-    glAttachShader(m_program, shaderObj);
-}
-
-/** Links the program
- *  @note Throws a runtime error if linking fails or the program is invalid
- */
-void ComputeProgram::build() {
-    GLint success = 0;
-	GLchar errorLog[1024] = { 0 };
-
-	glLinkProgram (m_program);
-
-    glGetProgramiv(m_program, GL_LINK_STATUS, &success);
-	if (success == 0) {
-		glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
-		std::cerr << "Error linking shader program: " << errorLog << std::endl;
-		throw std::runtime_error(std::string("Error linking graphical shader program"));
-	}
-
-    glValidateProgram(m_program);
-	glGetProgramiv(m_program, GL_VALIDATE_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
-		std::cerr << "Invalid shader program: " << errorLog << std::endl;
-		throw std::runtime_error(std::string("Rendering pipeline program is invalid"));
-	}
-}
-
-///Sets the calling program as the active program for OpenGL
-void ComputeProgram::setActiveProgram() {
-    glUseProgram(m_program);
 }
 
 /** Dispatches the compute program
@@ -280,14 +227,4 @@ void ComputeProgram::dispatch(GLuint x, GLuint y, GLuint z) {
 ///Indirectly dispatches the compute program
 void ComputeProgram::dispatchIndirect(GLintptr indirect) {
     glDispatchComputeIndirect(indirect);
-}
-
-///Returns the GLuint program for OpenGL/GLEW functions
-GLuint ComputeProgram::program() {
-    return m_program;
-}
-
-///Casts to a GLuint program for OpenGL/GLEW functions
-ComputeProgram::operator GLuint() {
-    return m_program;
 }
