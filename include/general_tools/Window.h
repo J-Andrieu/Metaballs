@@ -52,6 +52,7 @@ public:
     void setDrawParams(void* params);
     void draw();
 
+    ///Returns the default window flags: SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     constexpr static inline int DefaultWindowFlags() {
         return SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
     }
