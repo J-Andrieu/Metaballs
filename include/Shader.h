@@ -1,10 +1,10 @@
-#include "general_tools/All.h"
-
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <initializer_list>
 #include <cstdarg>
+#include <fstream>
+#include <initializer_list>
+#include <sstream>
+#include <string>
+
+#include "general_tools/All.h"
 
 /** Namespace for shader classes and functions
  *  @namespace Shader
@@ -20,35 +20,37 @@ namespace Shader {
         shader(GLenum shaderType);
         shader(std::ifstream& shaderFile, GLenum shaderType);
         shader(std::string& shaderString, GLenum shaderType);
-        
-        //shader(shader&& shaderObj);
-        //shader& operator=(shader&& shaderObj);
-        //shader(const shader& shaderObj) = delete;
-        //shader& operator=(const shader& shaderObj) = delete;
+
+        // shader(shader&& shaderObj);
+        // shader& operator=(shader&& shaderObj);
+        // shader(const shader& shaderObj) = delete;
+        // shader& operator=(const shader& shaderObj) = delete;
 
         ~shader();
 
-        void setSource(GLsizei numStrings, const GLchar** strings, GLint* lengths);
+        void setSource(GLsizei numStrings, const GLchar** strings,
+                       GLint* lengths);
         void setSource(std::ifstream& shaderFile);
         void setSource(std::string& shaderString);
-        
+
         void compile();
 
         GLuint object();
         operator GLuint();
-    
+
     private:
-        std::string m_shaderSource;///< holds generated string for initializing from file
+        std::string m_shaderSource;  ///< holds generated string for
+                                     ///< initializing from file
         GLenum m_shaderType;
         GLuint m_shaderObj;
     };
 
-    ///Base class for OpenGL program containers
+    /// Base class for OpenGL program containers
     class ProgramBase {
     protected:
         ProgramBase();
         ~ProgramBase();
-        
+
     public:
         void attachShader(shader& shaderObj);
         void build();
@@ -60,7 +62,6 @@ namespace Shader {
 
     private:
         GLuint m_program;
-
     };
 
     /** Class for storing a graphics pipeline shader program
@@ -69,9 +70,9 @@ namespace Shader {
     class GraphicsProgram : public ProgramBase {
     public:
         /** GraphicsProgram default constructor
-          *  @note Throws a runtime error if a program can't be created
-          */
-        GraphicsProgram() : ProgramBase() {};
+         *  @note Throws a runtime error if a program can't be created
+         */
+        GraphicsProgram() : ProgramBase(){};
         GraphicsProgram(std::initializer_list<shader> shaders);
 
         GraphicsProgram(GraphicsProgram&& program);
@@ -86,9 +87,9 @@ namespace Shader {
     class ComputeProgram : public ProgramBase {
     public:
         /** ComputeProgram default constructor
-          *  @note Throws a runtime error if a program can't be created
-          */
-        ComputeProgram() : ProgramBase() {};
+         *  @note Throws a runtime error if a program can't be created
+         */
+        ComputeProgram() : ProgramBase(){};
         ComputeProgram(shader& shaderObj);
 
         ComputeProgram(ComputeProgram&& program);
@@ -100,4 +101,4 @@ namespace Shader {
         void dispatchIndirect(GLintptr indirect);
     };
 
-};
+};  // namespace Shader

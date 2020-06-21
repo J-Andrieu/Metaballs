@@ -1,10 +1,10 @@
-#include "Shader.h"
 #include "Ball.h"
+#include "Shader.h"
 
 #define INVALID_UNIFORM_LOCATION 0x7fffffff
 
-//struct to hold pointers to all class members
-//required by the rendering functions
+// struct to hold pointers to all class members
+// required by the rendering functions
 typedef struct {
     GUIWindow* window;
     bool* sizeChanged;
@@ -32,7 +32,7 @@ public:
     void updateDimensions();
 
 private:
-    //members utilized by rendering functions
+    // members utilized by rendering functions
     float m_sliderQuad[4];
     float m_gradientSpeed;
     bool m_sizeChanged;
@@ -42,14 +42,14 @@ private:
     GLuint m_quadVAO;
     GLuint m_texOut;
     float m_timeOffset;
-    
-    //members related to the main window
+
+    // members related to the main window
     GUIWindow* m_window;
     drawParams m_params;
     static void m_drawGUIFunc(void*);
     static void m_drawFunc(void*);
-    
-    //shader variables
+
+    // shader variables
     Shader::GraphicsProgram* m_tex2ScreenRender;
     Shader::ComputeProgram* m_defaultCompute;
     GLuint m_computeUniformTime;
