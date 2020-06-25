@@ -54,4 +54,7 @@ private:
     Shader::ComputeProgram* m_defaultCompute;
     GLuint m_computeUniformTime;
     GLuint m_renderUniformSize;
+
+    //metaball data
+    std::vector<Ball> m_metaballs;
 };
