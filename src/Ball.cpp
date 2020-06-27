@@ -16,7 +16,7 @@ void updateMetaballs_StraightPath(std::vector<Ball> balls, size_t width, size_t 
 
 void updateMetaballs_RandomPath(std::vector<Ball> balls, float theta, size_t width, size_t height) {
     for (auto ball : balls) {
-        //get normalized vetor of velocity
+        //get normalized vector of velocity
         struct {float x; float y;} normalVel = {ball.velocity.x, ball.velocity.y};
         float mag = std::pow(normalVel.x, 2) + std::pow(normalVel.y, 2);
         mag = std::sqrt(mag);
@@ -24,7 +24,7 @@ void updateMetaballs_RandomPath(std::vector<Ball> balls, float theta, size_t wid
         float currAngle = std::atan(normalVel.y / normalVel.x);
 
         //get degree change to new velocity
-        float degChange = (float) std::rand() / (float) RAND_MAX;
+        float degChange = (float) std::rand() / RAND_MAX;
         degChange *= theta;
         degChange -= theta / 2;
 

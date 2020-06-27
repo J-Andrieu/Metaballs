@@ -3,22 +3,11 @@
 
 #define INVALID_UNIFORM_LOCATION 0x7fffffff
 
-// struct to hold pointers to all class members
+class Graphics;
+
 // required by the rendering functions
 typedef struct {
-    GUIWindow* window;
-    bool* sizeChanged;
-    GLuint* texOut;
-    int* height;
-    int* width;
-    Shader::ComputeProgram* computeProg;
-    Shader::GraphicsProgram* tex2ScreenProg;
-    float* timeOffset;
-    float* gradientSpeed;
-    GLuint* uniformTime;
-    GLuint* uniformSize;
-    GLuint* quadVAO;
-    float* sliderQuad;
+    Graphics* graphics;
 } drawParams;
 
 class Graphics {
@@ -27,9 +16,11 @@ public:
     ~Graphics();
 
     GUIWindow* Window();
-    int Height();
-    int Width();
+    int height();
+    int width();
     void updateDimensions();
+
+    void update();// Update positions of metaballs
 
 private:
     // members utilized by rendering functions
@@ -46,15 +37,26 @@ private:
     // members related to the main window
     GUIWindow* m_window;
     drawParams m_params;
-    static void m_drawGUIFunc(void*);
+    static void m_drawGUIFunc(void*);// This will also update general settings
     static void m_drawFunc(void*);
 
     // shader variables
+    typedef enum {
+        Default,
+        NumShaderTypes
+    } ShaderType;
     Shader::GraphicsProgram* m_tex2ScreenRender;
-    Shader::ComputeProgram* m_defaultCompute;
+    std::vector<Shader::ComputeProgram*> m_computeShaders;
     GLuint m_computeUniformTime;
     GLuint m_renderUniformSize;
 
     //metaball data
+    bool m_wigglyMovement;
+    size_t m_numBalls;//needed for shaders
     std::vector<Ball> m_metaballs;
+    std::vector<ImVec4> m_colors;
+    void pushBall(Ball ball);
+    void pushBall();
+    void popBall();
+    void drawBallInterface();
 };

@@ -16,9 +16,9 @@ typedef struct {
         float y;
     } velocity;
     struct {
-        size_t r;
-        size_t g;
-        size_t b;
+        float r;
+        float g;
+        float b;
     } color;
 } Ball;
 

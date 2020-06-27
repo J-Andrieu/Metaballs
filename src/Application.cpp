@@ -46,8 +46,8 @@ void Application::run() {
         if (running) {
             int newWidth, newHeight;
             SDL_GetWindowSize(*m_graphics->Window(), &newWidth, &newHeight);
-            if (newWidth != m_graphics->Height() ||
-                newHeight != m_graphics->Width()) {
+            if (newWidth != m_graphics->height() ||
+                newHeight != m_graphics->width()) {
                 m_graphics->updateDimensions();
             }
             m_graphics->Window()->draw();

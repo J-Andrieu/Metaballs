@@ -8,7 +8,11 @@ Graphics::Graphics(int height, int width)
       m_width(m_width),
       m_texOut(0),
       m_timeOffset(0),
-      m_sizeChanged(true) {
+      m_sizeChanged(true),
+      m_wigglyMovement(false),
+      m_numBalls(0),
+      m_metaballs(0),
+      m_colors(0) {
     // initialize the window
     m_window = new GUIWindow("Metaballs", height, width,
                              Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
@@ -42,8 +46,9 @@ Graphics::Graphics(int height, int width)
     std::ifstream computeFS("shaders/standard_render.comp");
     Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
     computeShader.compile();
-    m_defaultCompute = new Shader::ComputeProgram(computeShader);
-    m_defaultCompute->build();
+    m_computeShaders.resize(NumShaderTypes);
+    m_computeShaders[Default] = new Shader::ComputeProgram(computeShader);
+    m_computeShaders[Default]->build();
     computeFS.close();
 
     // attach uniform variables to shaders
@@ -52,7 +57,8 @@ Graphics::Graphics(int height, int width)
         throw std::runtime_error(
             std::string("Uniform time could not be found"));
     }
-    m_computeUniformTime = glGetUniformLocation(*m_defaultCompute, "time");
+    m_computeUniformTime =
+        glGetUniformLocation(*m_computeShaders[ShaderType::Default], "time");
     if (m_computeUniformTime == INVALID_UNIFORM_LOCATION) {
         throw std::runtime_error(
             std::string("Uniform time could not be found"));
@@ -72,21 +78,13 @@ Graphics::Graphics(int height, int width)
     glDeleteBuffers(1, &quadVBO);
 
     // attach parameters for drawing functions to windows
-    m_params = (drawParams){m_window,
-                            &m_sizeChanged,
-                            &m_texOut,
-                            &m_height,
-                            &m_width,
-                            m_defaultCompute,
-                            m_tex2ScreenRender,
-                            &m_timeOffset,
-                            &m_gradientSpeed,
-                            &m_computeUniformTime,
-                            &m_renderUniformSize,
-                            &m_quadVAO,
-                            m_sliderQuad};
+    m_params = (drawParams){this};
     m_window->setDrawParams((void*)&m_params);
     m_window->setGUIParams((void*)&m_params);
+
+    for(int i = 0; i < 30; i++) {
+        pushBall();
+    }
 }
 
 Graphics::~Graphics() {
@@ -94,14 +92,16 @@ Graphics::~Graphics() {
     glDeleteVertexArrays(1, &m_quadVAO);
     delete m_window;
     delete m_tex2ScreenRender;
-    delete m_defaultCompute;
+    for (auto ptr : m_computeShaders) {
+        delete ptr;
+    }
 }
 
 GUIWindow* Graphics::Window() { return m_window; }
 
-int Graphics::Height() { return m_height; }
+int Graphics::height() { return m_height; }
 
-int Graphics::Width() { return m_width; }
+int Graphics::width() { return m_width; }
 
 void Graphics::updateDimensions() {
     SDL_GetWindowSize(*m_window, &m_width, &m_height);
@@ -110,29 +110,30 @@ void Graphics::updateDimensions() {
 
 void Graphics::m_drawFunc(void* _params) {
     drawParams* params = (drawParams*)_params;
+    Graphics* graphics = params->graphics;
 
-    int width = params->window->getWidth();
-    int height = params->window->getHeight();
+    int width = graphics->m_window->getWidth();
+    int height = graphics->m_window->getHeight();
     // this is made of memory leaks, should be stored in object
     // when finalized for proper resource freeing
-    if (*params->sizeChanged || *params->texOut == 0) {
-        if (*params->texOut != 0) {
-            glDeleteTextures(1, params->texOut);
+    if (graphics->m_sizeChanged || graphics->m_texOut == 0) {
+        if (graphics->m_texOut != 0) {
+            glDeleteTextures(1, &graphics->m_texOut);
         }
-        glGenTextures(1, params->texOut);
+        glGenTextures(1, &graphics->m_texOut);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, *params->texOut);
+        glBindTexture(GL_TEXTURE_2D, graphics->m_texOut);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width - 300, height, 0,
                      GL_RGBA, GL_FLOAT, NULL);
-        glBindImageTexture(0, *params->texOut, 0, GL_FALSE, 0, GL_WRITE_ONLY,
+        glBindImageTexture(0, graphics->m_texOut, 0, GL_FALSE, 0, GL_WRITE_ONLY,
                            GL_RGBA32F);
-        *params->height = height;
-        *params->width = width;
-        *params->sizeChanged = false;
+        graphics->m_height = height;
+        graphics->m_width = width;
+        graphics->m_sizeChanged = false;
     }
 
     // empty the window
@@ -141,12 +142,12 @@ void Graphics::m_drawFunc(void* _params) {
 
     // compute the gradient
     {
-        params->computeProg->setActiveProgram();
-        *params->timeOffset += *params->gradientSpeed;
-        float i = std::sin(*params->timeOffset);
+        graphics->m_computeShaders[Default]->setActiveProgram();
+        graphics->m_timeOffset += graphics->m_gradientSpeed;
+        float i = std::sin(graphics->m_timeOffset);
         i += 1.0f;
         i /= 2.0f;
-        glUniform1f(*params->uniformTime, i);
+        glUniform1f(graphics->m_computeUniformTime, i);
         glDispatchCompute((GLuint)width - 300, (GLuint)height, 1);
     }
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -155,11 +156,11 @@ void Graphics::m_drawFunc(void* _params) {
     {
         glClear(GL_COLOR_BUFFER_BIT);
         glViewport(300, 0, width - 300, height);
-        params->tex2ScreenProg->setActiveProgram();
-        glUniform2f(*params->uniformSize, (float)width, (float)height);
-        glBindVertexArray(*params->quadVAO);
+        graphics->m_tex2ScreenRender->setActiveProgram();
+        glUniform2f(graphics->m_renderUniformSize, (float)width, (float)height);
+        glBindVertexArray(graphics->m_quadVAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, *params->texOut);
+        glBindTexture(GL_TEXTURE_2D, graphics->m_texOut);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
@@ -167,16 +168,17 @@ void Graphics::m_drawFunc(void* _params) {
 // draw the test panel
 void Graphics::m_drawGUIFunc(void* _params) {
     drawParams* params = (drawParams*)_params;
+    Graphics* graphics = params->graphics;
 
     // start the frame
-    GUIWindow::NewFrame(*params->window);
+    GUIWindow::NewFrame(*graphics->m_window);
 
     // set up styling and location
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowRounding = 0.0f;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
-    int width = params->window->getWidth();
-    int height = params->window->getHeight();
+    int width = graphics->m_window->getWidth();
+    int height = graphics->m_window->getHeight();
     ImGui::SetNextWindowSize(ImVec2(300, height), ImGuiCond_Always);
 
     // begin the side panel
@@ -194,12 +196,13 @@ void Graphics::m_drawGUIFunc(void* _params) {
     ImGui::Text("Important stuff will go here >.>");
 
     // block of configurable values
-    ImGui::SliderFloat("Gradient Speed", params->gradientSpeed, 0.0f, 0.1f);
+    ImGui::SliderFloat("Gradient Speed", &graphics->m_gradientSpeed, 0.0f,
+                       0.1f);
     for (int i = 0; i < 4; i++) {
-        ImGui::SliderFloat4("lol,", params->sliderQuad, 0, 42);
-        ImGui::SliderFloat4("random", params->sliderQuad, 0, 42);
+        ImGui::SliderFloat4("lol,", graphics->m_sliderQuad, 0, 42);
+        ImGui::SliderFloat4("random", graphics->m_sliderQuad, 0, 42);
         if (i != 3) {
-            ImGui::SliderFloat4("sliders", params->sliderQuad, 0, 42);
+            ImGui::SliderFloat4("sliders", graphics->m_sliderQuad, 0, 42);
         }
     }
 
@@ -211,14 +214,46 @@ void Graphics::m_drawGUIFunc(void* _params) {
     window_flags |= ImGuiWindowFlags_NoMove;
     ImGui::BeginChildFrame(ImGui::GetID("Bar and stuffs"),
                            ImVec2(300, height - 305), window_flags);
-    for (int i = 0; i < 150; i++) {
-        ImGui::Text("Lol, this is where the graphs would go");
-    }
-    ImGui::Text(">.>");
+    graphics->drawBallInterface(); 
     ImGui::EndChildFrame();
-
     ImGui::End();
 
     // end the frame
     GUIWindow::RenderFrame();
+}
+
+void Graphics::pushBall(Ball ball) {
+    m_metaballs.resize(++m_numBalls);
+    m_colors.resize(m_numBalls);
+    m_metaballs[m_numBalls - 1] = ball;
+    m_colors[m_numBalls - 1] = ImVec4(ball.color.r, ball.color.g, ball.color.b, 1.0f);
+}
+
+void Graphics::pushBall() {
+    Ball ball;
+    ball.size = std::rand() % 20;
+    //ball.position = {(float) (std::rand() % m_width), (float) (std::rand() % m_height)};
+    ball.velocity = {(float) (std::rand() % 20), (float) (std::rand() % 20)};
+    ball.color = {(float) std::rand() / RAND_MAX, (float) std::rand() / RAND_MAX,
+                  (float) std::rand() / RAND_MAX};
+    pushBall(ball);
+}
+
+void Graphics::popBall() {
+    m_metaballs.pop_back();
+    m_colors.pop_back();
+    m_numBalls--;
+}
+
+void Graphics::drawBallInterface() {
+    //ImDrawList* drawList = ImGui::GetWindowDrawList();
+    for (int i = 0; i < m_numBalls; i++) {
+        ///drawList->AddCircleFilled(ImVec2(), m_metaballs[i].size, ImColor(m_colors[i]));
+        ImGui::SliderFloat("Radius", &m_metaballs[i].size, 1.0f, 20.0f, "");
+        ImGui::SliderFloat2("Velocity", (float*) &m_metaballs[i].velocity, 1.0f, 20.0f, "");
+        ImGui::ColorEdit3("Color", &m_colors[i].x);
+        if(i < m_numBalls - 1) {
+            ImGui::Separator();
+        }
+    }
 }
