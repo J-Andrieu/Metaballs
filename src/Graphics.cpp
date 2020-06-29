@@ -108,6 +108,18 @@ void Graphics::updateDimensions() {
     m_sizeChanged = true;
 }
 
+void Graphics::update() {
+    if (m_wigglyMovement) {
+        updateMetaballs_RandomPath(m_metaballs, 1.0f, m_width, m_height);
+    } else {
+        updateMetaballs_StraightPath(m_metaballs, m_width, m_height);
+    }
+
+    for (int i = 0; i < m_numBalls; i++) {
+        m_metaballs[i].color = {m_colors[i].x, m_colors[i].y, m_colors[i].z};
+    }
+}
+
 void Graphics::m_drawFunc(void* _params) {
     drawParams* params = (drawParams*)_params;
     Graphics* graphics = params->graphics;
