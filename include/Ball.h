@@ -22,7 +22,7 @@ typedef struct {
     } color;
 } Ball;
 
-void updateMetaballs_StraightPath(std::vector<Ball> balls, size_t width, size_t height);
-void updateMetaballs_RandomPath(std::vector<Ball> balls, float theta, size_t width, size_t height);
+void updateMetaballs_StraightPath(std::vector<Ball>& balls, size_t width, size_t height);
+void updateMetaballs_RandomPath(std::vector<Ball>& balls, float theta, size_t width, size_t height);
 
 #endif /* BALL_H */

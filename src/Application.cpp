@@ -50,6 +50,7 @@ void Application::run() {
                 newHeight != m_graphics->width()) {
                 m_graphics->updateDimensions();
             }
+            m_graphics->update();
             m_graphics->Window()->draw();
             m_graphics->Window()->drawGUI();
             m_graphics->Window()->swap();

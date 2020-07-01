@@ -33,6 +33,7 @@ private:
     GLuint m_quadVAO;
     GLuint m_texOut;
     float m_timeOffset;
+    float m_menuWidth;
 
     // members related to the main window
     GUIWindow* m_window;
@@ -49,8 +50,12 @@ private:
     std::vector<Shader::ComputeProgram*> m_computeShaders;
     GLuint m_computeUniformTime;
     GLuint m_renderUniformSize;
+    GLuint m_metaballsSSBO;
+    GLuint m_ssboBindingIndex;
+    void bindSSBO();
 
     //metaball data
+    bool m_genSSBO;
     bool m_wigglyMovement;
     size_t m_numBalls;//needed for shaders
     std::vector<Ball> m_metaballs;
