@@ -171,7 +171,7 @@ void ProgramBase::build() {
         glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
         std::cerr << "Error linking shader program: " << errorLog << std::endl;
         throw std::runtime_error(
-            std::string("Error linking graphical shader program"));
+            std::string("Error linking shader program"));
     }
 
     glValidateProgram(m_program);
@@ -180,7 +180,7 @@ void ProgramBase::build() {
         glGetProgramInfoLog(m_program, sizeof(errorLog), NULL, errorLog);
         std::cerr << "Invalid shader program: " << errorLog << std::endl;
         throw std::runtime_error(
-            std::string("Rendering pipeline program is invalid"));
+            std::string("GPU program is invalid"));
     }
 }
 

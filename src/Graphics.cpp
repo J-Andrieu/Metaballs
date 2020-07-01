@@ -6,7 +6,7 @@ GLfloat Graphics::s_quadVertexBufferData[8] = {-1.0f, 1.0f, -1.0f, -1.0f,
 Graphics::Graphics(int height, int width)
     : m_height(height),
       m_width(width),
-      m_menuWidth(350),
+      m_menuWidth(400),
       m_texOut(0),
       m_timeOffset(0),
       m_sizeChanged(true),
@@ -16,7 +16,9 @@ Graphics::Graphics(int height, int width)
       m_colors(0),
       m_metaballsSSBO(0),
       m_genSSBO(true),
-      m_ssboBindingIndex(1) {
+      m_ssboBindingIndex(1),
+      m_currentShader(Default),
+      m_shaderName("Circles") {
     // initialize the window
     m_window = new GUIWindow("Metaballs", height, width,
                              Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
@@ -28,16 +30,19 @@ Graphics::Graphics(int height, int width)
     m_window->setDrawFunc(m_drawFunc);
     m_window->setGUIFunc(m_drawGUIFunc);
 
-    // prepare the compute shader
-    // std::ifstream computeFS("shaders/standard_render.comp");
-    std::ifstream computeFS("shaders/circles.comp");
-    Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
-    computeShader.compile();
+    // prepare the compute shaders
+    //Circles, Cells, Meta_BlueGreen, Meta_RegOrange, Meta_RGB
+    std::vector<std::string> shaderFiles = {"circles.comp", "cells.comp", "meta_bg.comp", "meta_ro.comp", "meta_rgb.comp"};
     m_computeShaders.resize(NumShaderTypes);
-    m_computeShaders[Default] = new Shader::ComputeProgram(computeShader);
-    m_computeShaders[Default]->build();
-    computeFS.close();
+    for (int i = 0; i < NumShaderTypes; i++) {
+        std::ifstream computeFS(std::string("shaders/") + shaderFiles[i]);
+        Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
+        computeShader.compile();
 
+        m_computeShaders[i] = new Shader::ComputeProgram(computeShader);
+        m_computeShaders[i]->build();
+    }
+    
     // prepare vertex array
     glGenVertexArrays(1, &m_quadVAO);
     glBindVertexArray(m_quadVAO);
@@ -66,7 +71,6 @@ Graphics::~Graphics() {
     glDeleteVertexArrays(1, &m_quadVAO);
     glDeleteBuffers(1, &m_metaballsSSBO);
     delete m_window;
-    delete m_tex2ScreenRender;
     for (auto ptr : m_computeShaders) {
         delete ptr;
     }
@@ -137,7 +141,7 @@ void Graphics::m_drawFunc(void* _params) {
     // compute the gradient
     {
         graphics->bindSSBO();
-        graphics->m_computeShaders[Default]->setActiveProgram();
+        graphics->m_computeShaders[graphics->m_currentShader]->setActiveProgram();
         glDispatchCompute((GLuint)width - graphics->m_menuWidth, (GLuint)height,
                           1);
     }
@@ -203,10 +207,43 @@ void Graphics::m_drawGUIFunc(void* _params) {
     ImGui::Begin("Bar and stuffs", &barAndStuffs, window_flags);
 
     // zeh stuff in the panel
-    ImGui::Text("Important stuff will go here >.>");
 
     // block of configurable values
-    
+    ImGui::Text(" ");
+    ImGui::Text(" Currently selected shader: ");
+    ImGui::SameLine();
+    if (ImGui::CollapsingHeader(graphics->m_shaderName.c_str())) {
+        if (ImGui::Button("Circles")) {
+            graphics->m_currentShader = Circles;
+            graphics->m_shaderName = "Circles";
+        }
+        if (ImGui::Button("Cells")) {
+            graphics->m_currentShader = Cells;
+            graphics->m_shaderName = "Cells";
+        }
+        if (ImGui::Button("Blue/Green Metaballs")) {
+            graphics->m_currentShader = Meta_BlueGreen;
+            graphics->m_shaderName = "Blue/Green Metaballs";
+        }
+        if (ImGui::Button("Red/Orange Metaballs")) {
+            graphics->m_currentShader = Meta_RedOrange;
+            graphics->m_shaderName = "Red/Orange Metaballs";
+        }
+        if (ImGui::Button("RGB Metaballs")) {
+            graphics->m_currentShader = Meta_RGB;
+            graphics->m_shaderName = "RGB Metaballs";
+        }
+    }
+
+    if (ImGui::Button("Add Ball")) {
+        graphics->pushBall();
+        graphics->m_genSSBO = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Remove Ball")) {
+        graphics->popBall();
+        graphics->m_genSSBO = true;
+    }
 
     // block of graphs (scrollable)
     window_flags = 0;
@@ -254,11 +291,9 @@ void Graphics::popBall() {
 }
 
 void Graphics::drawBallInterface() {
-    // ImDrawList* drawList = ImGui::GetWindowDrawList();
     for (int i = 0; i < m_numBalls; i++) {
         ImGui::PushID(i + 42);
-        /// drawList->AddCircleFilled(ImVec2(), m_metaballs[i].size,
-        /// ImColor(m_colors[i]));
+
         ImGui::SliderFloat("Radius", &m_metaballs[i].size, 1.0f, 100.0f, "");
         ImGui::SliderFloat2("Velocity", (float*)&m_metaballs[i].velocity, -5.0f,
                             5.0f, "");
@@ -270,6 +305,7 @@ void Graphics::drawBallInterface() {
         if (i < m_numBalls - 1) {
             ImGui::Separator();
         }
+
         ImGui::PopID();
     }
 }

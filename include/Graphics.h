@@ -42,12 +42,16 @@ private:
     // shader variables
     typedef enum {
         Default,
+        Circles = Default,
+        Cells,
+        Meta_BlueGreen,
+        Meta_RedOrange,
+        Meta_RGB,
         NumShaderTypes
     } ShaderType;
-    Shader::GraphicsProgram* m_tex2ScreenRender;
+    ShaderType m_currentShader;
+    std::string m_shaderName;
     std::vector<Shader::ComputeProgram*> m_computeShaders;
-    GLuint m_computeUniformTime;
-    GLuint m_renderUniformSize;
     GLuint m_metaballsSSBO;
     GLuint m_ssboBindingIndex;
     void bindSSBO();
