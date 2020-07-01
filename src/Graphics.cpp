@@ -25,11 +25,6 @@ Graphics::Graphics(int height, int width)
     ImGui::StyleColorsDark();
 
     // attach window draw functions
-    m_gradientSpeed = 0.01f;
-    m_sliderQuad[0] = 42;
-    m_sliderQuad[1] = 69;
-    m_sliderQuad[2] = 420;
-    m_sliderQuad[3] = 9001;
     m_window->setDrawFunc(m_drawFunc);
     m_window->setGUIFunc(m_drawGUIFunc);
 
@@ -153,6 +148,9 @@ void Graphics::m_drawFunc(void* _params) {
         // set up styling and location
         ImGuiStyle& style = ImGui::GetStyle();
         style.WindowRounding = 0.0f;
+        style.WindowPadding = ImVec2(0.0f, 0.0f);
+        style.WindowBorderSize = 3.0f;
+        style.ScrollbarSize = 5.0f;
         ImGui::SetNextWindowPos(ImVec2(graphics->m_menuWidth, 0),
                                 ImGuiCond_Appearing);
         int width = graphics->m_window->getWidth();
@@ -171,14 +169,12 @@ void Graphics::m_drawFunc(void* _params) {
         window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::Begin("Viewport", &viewport, window_flags);
         
         ImGui::Image((ImTextureID) (intptr_t) graphics->m_texOut,
                      ImVec2(width - graphics->m_menuWidth, height));
         
         ImGui::End();
-        ImGui::PopStyleVar();
         ImGui::PopStyleVar();
     }
 }
@@ -210,17 +206,7 @@ void Graphics::m_drawGUIFunc(void* _params) {
     ImGui::Text("Important stuff will go here >.>");
 
     // block of configurable values
-    ImGui::SliderFloat("Gradient Speed", &graphics->m_gradientSpeed, 0.0f,
-                       0.1f);
-    for (int i = 0; i < 4; i++) {
-        ImGui::PushID(i);
-        ImGui::SliderFloat4("lol,", graphics->m_sliderQuad, 0, 42);
-        ImGui::SliderFloat4("random", graphics->m_sliderQuad, 0, 42);
-        if (i != 3) {
-            ImGui::SliderFloat4("sliders", graphics->m_sliderQuad, 0, 42);
-        }
-        ImGui::PopID();
-    }
+    
 
     // block of graphs (scrollable)
     window_flags = 0;
@@ -229,7 +215,7 @@ void Graphics::m_drawGUIFunc(void* _params) {
     window_flags |= ImGuiWindowFlags_NoTitleBar;
     window_flags |= ImGuiWindowFlags_NoMove;
     ImGui::BeginChildFrame(ImGui::GetID("Bar and stuffs"),
-                           ImVec2(graphics->m_menuWidth, height - 305),
+                           ImVec2(graphics->m_menuWidth, height - (ImGui::GetCursorPosY() + 5)),
                            window_flags);
     graphics->drawBallInterface();
     ImGui::EndChildFrame();

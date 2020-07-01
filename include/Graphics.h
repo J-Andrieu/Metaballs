@@ -24,8 +24,6 @@ public:
 
 private:
     // members utilized by rendering functions
-    float m_sliderQuad[4];
-    float m_gradientSpeed;
     bool m_sizeChanged;
     int m_height;
     int m_width;
