@@ -310,7 +310,7 @@ void Graphics::m_drawGUIFunc(void* _params) {
             ImGui::Checkbox("Green", &graphics->m_metaParamGreen);
             ImGui::SameLine();
             ImGui::Checkbox("Blue", &graphics->m_metaParamBlue);
-            ImGui::Checkbox("Default valuse to high",
+            ImGui::Checkbox("Default values to high",
                             &graphics->m_metaParamHigh);
 
             glUniform1f(graphics->m_metaParamUniform_radiusMult,
