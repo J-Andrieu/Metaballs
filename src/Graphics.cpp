@@ -22,7 +22,12 @@ Graphics::Graphics(int height, int width)
       m_cellsThresh(1),
       m_metaBGRadiusMult(100),
       m_metaRORadiusMult(400),
-      m_metaRGBRadiusMult(1000) {
+      m_metaRGBRadiusMult(1000),
+      m_metaParamRadiusMult(100),
+      m_metaParamRed(true),
+      m_metaParamGreen(false),
+      m_metaParamBlue(false),
+      m_metaParamHigh(false) {
     // initialize the window
     m_window = new GUIWindow("Metaballs", height, width,
                              Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
@@ -35,8 +40,10 @@ Graphics::Graphics(int height, int width)
     m_window->setGUIFunc(m_drawGUIFunc);
 
     // prepare the compute shaders
-    //Circles, Cells, Meta_BlueGreen, Meta_RegOrange, Meta_RGB
-    std::vector<std::string> shaderFiles = {"circles.comp", "cells.comp", "meta_bg.comp", "meta_ro.comp", "meta_rgb.comp"};
+    // Circles, Cells, Meta_BlueGreen, Meta_RegOrange, Meta_RGB
+    std::vector<std::string> shaderFiles = {
+        "circles.comp", "cells.comp",    "meta_bg.comp",
+        "meta_ro.comp", "meta_rgb.comp", "meta_params.comp"};
     m_computeShaders.resize(NumShaderTypes);
     for (int i = 0; i < NumShaderTypes; i++) {
         std::ifstream computeFS(std::string("shaders/") + shaderFiles[i]);
@@ -47,11 +54,25 @@ Graphics::Graphics(int height, int width)
         m_computeShaders[i]->build();
     }
 
-    m_cellsUniform_thresh = glGetUniformLocation(*m_computeShaders[Cells], "sumThresh");
-    m_metaBGUniform_radiusMult = glGetUniformLocation(*m_computeShaders[Meta_BlueGreen], "radiusMult");
-    m_metaROUniform_radiusMult = glGetUniformLocation(*m_computeShaders[Meta_RedOrange], "radiusMult");
-    m_metaRGBUniform_radiusMult = glGetUniformLocation(*m_computeShaders[Meta_RGB], "radiusMult");
-    
+    m_cellsUniform_thresh =
+        glGetUniformLocation(*m_computeShaders[Cells], "sumThresh");
+    m_metaBGUniform_radiusMult =
+        glGetUniformLocation(*m_computeShaders[Meta_BlueGreen], "radiusMult");
+    m_metaROUniform_radiusMult =
+        glGetUniformLocation(*m_computeShaders[Meta_RedOrange], "radiusMult");
+    m_metaRGBUniform_radiusMult =
+        glGetUniformLocation(*m_computeShaders[Meta_RGB], "radiusMult");
+    m_metaParamUniform_radiusMult =
+        glGetUniformLocation(*m_computeShaders[Meta_Params], "radiusMult");
+    m_metaParamUniform_red =
+        glGetUniformLocation(*m_computeShaders[Meta_Params], "red");
+    m_metaParamUniform_green =
+        glGetUniformLocation(*m_computeShaders[Meta_Params], "green");
+    m_metaParamUniform_blue =
+        glGetUniformLocation(*m_computeShaders[Meta_Params], "blue");
+    m_metaParamUniform_high =
+        glGetUniformLocation(*m_computeShaders[Meta_Params], "high");
+
     // prepare vertex array
     glGenVertexArrays(1, &m_quadVAO);
     glBindVertexArray(m_quadVAO);
@@ -115,7 +136,7 @@ void Graphics::m_drawFunc(void* _params) {
     Graphics* graphics = params->graphics;
 
     glClear(GL_COLOR_BUFFER_BIT);
-    //start the frame for both render functions
+    // start the frame for both render functions
     GUIWindow::NewFrame(*graphics->m_window);
 
     int width = graphics->m_window->getWidth();
@@ -150,7 +171,8 @@ void Graphics::m_drawFunc(void* _params) {
     // compute the gradient
     {
         graphics->bindSSBO();
-        graphics->m_computeShaders[graphics->m_currentShader]->setActiveProgram();
+        graphics->m_computeShaders[graphics->m_currentShader]
+            ->setActiveProgram();
         glDispatchCompute((GLuint)width - graphics->m_menuWidth, (GLuint)height,
                           1);
     }
@@ -183,10 +205,10 @@ void Graphics::m_drawFunc(void* _params) {
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         ImGui::Begin("Viewport", &viewport, window_flags);
-        
-        ImGui::Image((ImTextureID) (intptr_t) graphics->m_texOut,
+
+        ImGui::Image((ImTextureID)(intptr_t)graphics->m_texOut,
                      ImVec2(width - graphics->m_menuWidth, height));
-        
+
         ImGui::End();
         ImGui::PopStyleVar();
     }
@@ -242,31 +264,67 @@ void Graphics::m_drawGUIFunc(void* _params) {
             graphics->m_currentShader = Meta_RGB;
             graphics->m_shaderName = "RGB Metaballs";
         }
+        if (ImGui::Button("Parameterized Metaballs")) {
+            graphics->m_currentShader = Meta_Params;
+            graphics->m_shaderName = "Parameterized Metaballs";
+        }
     }
 
     switch (graphics->m_currentShader) {
         case Cells:
-            ImGui::SliderFloat("Threshold", &graphics->m_cellsThresh, 0.1, 5, "");
-            glUniform1f(graphics->m_cellsUniform_thresh, 1.0f / graphics->m_cellsThresh);
+            ImGui::SliderFloat("Threshold", &graphics->m_cellsThresh, 0.1, 5,
+                               "");
+            glUniform1f(graphics->m_cellsUniform_thresh,
+                        1.0f / graphics->m_cellsThresh);
             break;
-        
+
         case Meta_BlueGreen:
-            ImGui::SliderFloat("Radius Multiplier", &graphics->m_metaBGRadiusMult, 0.01, 1000, "");
-            glUniform1f(graphics->m_metaBGUniform_radiusMult, graphics->m_metaBGRadiusMult);
+            ImGui::SliderFloat("Radius Multiplier",
+                               &graphics->m_metaBGRadiusMult, 0.01, 1000, "");
+            glUniform1f(graphics->m_metaBGUniform_radiusMult,
+                        graphics->m_metaBGRadiusMult);
             break;
 
         case Meta_RedOrange:
-            ImGui::SliderFloat("Radius Multiplier", &graphics->m_metaRORadiusMult, 0.01, 1000, "");
-            glUniform1f(graphics->m_metaROUniform_radiusMult, graphics->m_metaRORadiusMult);
+            ImGui::SliderFloat("Radius Multiplier",
+                               &graphics->m_metaRORadiusMult, 0.01, 1000, "");
+            glUniform1f(graphics->m_metaROUniform_radiusMult,
+                        graphics->m_metaRORadiusMult);
             break;
 
         case Meta_RGB:
-            ImGui::SliderFloat("Radius Multiplier", &graphics->m_metaRGBRadiusMult, 0.01, 2000, "");
-            glUniform1f(graphics->m_metaRGBUniform_radiusMult, graphics->m_metaRGBRadiusMult);
+            ImGui::SliderFloat("Radius Multiplier",
+                               &graphics->m_metaRGBRadiusMult, 0.01, 2000, "");
+            glUniform1f(graphics->m_metaRGBUniform_radiusMult,
+                        graphics->m_metaRGBRadiusMult);
+            break;
+
+        case Meta_Params:
+            ImGui::SliderFloat("Radius Multiplier",
+                               &graphics->m_metaParamRadiusMult, 0.01, 1000,
+                               "");
+            ImGui::Text(" Affected channels: ");
+            ImGui::SameLine();
+            ImGui::Checkbox("Red", &graphics->m_metaParamRed);
+            ImGui::SameLine();
+            ImGui::Checkbox("Green", &graphics->m_metaParamGreen);
+            ImGui::SameLine();
+            ImGui::Checkbox("Blue", &graphics->m_metaParamBlue);
+            ImGui::Checkbox("Default valuse to high",
+                            &graphics->m_metaParamHigh);
+
+            glUniform1f(graphics->m_metaParamUniform_radiusMult,
+                        graphics->m_metaParamRadiusMult);
+            glUniform1i(graphics->m_metaParamUniform_red,
+                        graphics->m_metaParamRed);
+            glUniform1i(graphics->m_metaParamUniform_green,
+                        graphics->m_metaParamGreen);
+            glUniform1i(graphics->m_metaParamUniform_blue,
+                        graphics->m_metaParamBlue);
+            glUniform1i(graphics->m_metaParamUniform_high,
+                        graphics->m_metaParamHigh);
             break;
     }
-
-
 
     if (ImGui::Button("Add Ball")) {
         graphics->pushBall();
@@ -284,9 +342,10 @@ void Graphics::m_drawGUIFunc(void* _params) {
     window_flags |= ImGuiWindowFlags_NoResize;
     window_flags |= ImGuiWindowFlags_NoTitleBar;
     window_flags |= ImGuiWindowFlags_NoMove;
-    ImGui::BeginChildFrame(ImGui::GetID("Bar and stuffs"),
-                           ImVec2(graphics->m_menuWidth, height - (ImGui::GetCursorPosY() + 5)),
-                           window_flags);
+    ImGui::BeginChildFrame(
+        ImGui::GetID("Bar and stuffs"),
+        ImVec2(graphics->m_menuWidth, height - (ImGui::GetCursorPosY() + 5)),
+        window_flags);
     graphics->drawBallInterface();
     ImGui::EndChildFrame();
     ImGui::End();

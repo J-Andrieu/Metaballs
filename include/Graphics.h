@@ -47,6 +47,7 @@ private:
         Meta_BlueGreen,
         Meta_RedOrange,
         Meta_RGB,
+        Meta_Params,
         NumShaderTypes
     } ShaderType;
     ShaderType m_currentShader;
@@ -62,6 +63,16 @@ private:
     float m_metaRORadiusMult;
     GLuint m_metaRGBUniform_radiusMult;
     float m_metaRGBRadiusMult;
+    GLuint m_metaParamUniform_radiusMult;
+    GLuint m_metaParamUniform_red;
+    GLuint m_metaParamUniform_green;
+    GLuint m_metaParamUniform_blue;
+    GLuint m_metaParamUniform_high;
+    float m_metaParamRadiusMult;
+    bool m_metaParamRed;
+    bool m_metaParamGreen;
+    bool m_metaParamBlue;
+    bool m_metaParamHigh;
     void bindSSBO();
 
     //metaball data

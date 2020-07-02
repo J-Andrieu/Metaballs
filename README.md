@@ -1,2 +1,3 @@
 # Metaballs
-Currently the metaballs application is just a more object oriented version test_application, which tests that the various tools in the general_tools files are functional, as well as being a quick touch-up on OpenGL and compute shaders.
+
+This project was created to learn more about compute shaders and to be a small refresher course in OpenGL. Currently this program supports 4 different 2D renderings of metaballs, as well as a default shader that simply renders circles
