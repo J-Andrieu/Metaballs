@@ -25,9 +25,9 @@ uniform bool high = false;
 
 float distance(float x1, float y1, float x2, float y2) {
     float x = x2 - x1;
-    x = pow(x, 2);
+    x = pow(x, 2.0);
     float y = y2 - y1;
-    y = pow(y, 2);
+    y = pow(y, 2.0);
     return sqrt(x + y);
 }
 
