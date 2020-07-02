@@ -17,6 +17,8 @@ layout (std430, binding = 1) buffer metaball_data {
     } balls[];
 } metaballs;
 
+uniform float radiusMult = 100.0f;
+
 float distance(float x1, float y1, float x2, float y2) {
     float x = x2 - x1;
     x = pow(x, 2);
@@ -33,14 +35,17 @@ void main() {
     float posX, posY;
     posX = float(idx.x);
     posY = float(idx.y);
+
+    float val = 0.0f;
     for (int i = 0; i < metaballs.numBalls; i++) {
-        if (distance(posX, posY, metaballs.balls[i].pos_x, metaballs.balls[i].pos_y) <= metaballs.balls[i].size) {
-            color.r = metaballs.balls[i].r;
-            color.g = metaballs.balls[i].g;
-            color.b = metaballs.balls[i].b;
-            break;
-        }
+        float dist = distance(posX, posY, metaballs.balls[i].pos_x, metaballs.balls[i].pos_y);
+        val += radiusMult * metaballs.balls[i].size / dist;
     }
+
+    val /= 255;
+
+    color.g = 1.0 - val;
+    color.b = val;
 
     imageStore(img_out, idx, color);
 }
