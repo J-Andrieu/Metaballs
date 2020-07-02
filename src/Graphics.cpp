@@ -18,7 +18,11 @@ Graphics::Graphics(int height, int width)
       m_genSSBO(true),
       m_ssboBindingIndex(1),
       m_currentShader(Default),
-      m_shaderName("Circles") {
+      m_shaderName("Circles"),
+      m_cellsThresh(1),
+      m_metaBGRadiusMult(100),
+      m_metaRORadiusMult(400),
+      m_metaRGBRadiusMult(1000) {
     // initialize the window
     m_window = new GUIWindow("Metaballs", height, width,
                              Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
@@ -42,6 +46,11 @@ Graphics::Graphics(int height, int width)
         m_computeShaders[i] = new Shader::ComputeProgram(computeShader);
         m_computeShaders[i]->build();
     }
+
+    m_cellsUniform_thresh = glGetUniformLocation(*m_computeShaders[Cells], "sumThresh");
+    m_metaBGUniform_radiusMult = glGetUniformLocation(*m_computeShaders[Meta_BlueGreen], "radiusMult");
+    m_metaROUniform_radiusMult = glGetUniformLocation(*m_computeShaders[Meta_RedOrange], "radiusMult");
+    m_metaRGBUniform_radiusMult = glGetUniformLocation(*m_computeShaders[Meta_RGB], "radiusMult");
     
     // prepare vertex array
     glGenVertexArrays(1, &m_quadVAO);
@@ -234,6 +243,30 @@ void Graphics::m_drawGUIFunc(void* _params) {
             graphics->m_shaderName = "RGB Metaballs";
         }
     }
+
+    switch (graphics->m_currentShader) {
+        case Cells:
+            ImGui::SliderFloat("Threshold", &graphics->m_cellsThresh, 0.1, 5, "");
+            glUniform1f(graphics->m_cellsUniform_thresh, 1.0f / graphics->m_cellsThresh);
+            break;
+        
+        case Meta_BlueGreen:
+            ImGui::SliderFloat("Radius Multiplier", &graphics->m_metaBGRadiusMult, 0.01, 1000, "");
+            glUniform1f(graphics->m_metaBGUniform_radiusMult, graphics->m_metaBGRadiusMult);
+            break;
+
+        case Meta_RedOrange:
+            ImGui::SliderFloat("Radius Multiplier", &graphics->m_metaRORadiusMult, 0.01, 1000, "");
+            glUniform1f(graphics->m_metaROUniform_radiusMult, graphics->m_metaRORadiusMult);
+            break;
+
+        case Meta_RGB:
+            ImGui::SliderFloat("Radius Multiplier", &graphics->m_metaRGBRadiusMult, 0.01, 2000, "");
+            glUniform1f(graphics->m_metaRGBUniform_radiusMult, graphics->m_metaRGBRadiusMult);
+            break;
+    }
+
+
 
     if (ImGui::Button("Add Ball")) {
         graphics->pushBall();

@@ -54,6 +54,14 @@ private:
     std::vector<Shader::ComputeProgram*> m_computeShaders;
     GLuint m_metaballsSSBO;
     GLuint m_ssboBindingIndex;
+    GLuint m_cellsUniform_thresh;
+    float m_cellsThresh;
+    GLuint m_metaBGUniform_radiusMult;
+    float m_metaBGRadiusMult;
+    GLuint m_metaROUniform_radiusMult;
+    float m_metaRORadiusMult;
+    GLuint m_metaRGBUniform_radiusMult;
+    float m_metaRGBRadiusMult;
     void bindSSBO();
 
     //metaball data
