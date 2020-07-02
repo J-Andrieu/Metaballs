@@ -46,12 +46,18 @@ Graphics::Graphics(int height, int width)
         "meta_ro.comp", "meta_rgb.comp", "meta_params.comp"};
     m_computeShaders.resize(NumShaderTypes);
     for (int i = 0; i < NumShaderTypes; i++) {
-        std::ifstream computeFS(std::string("shaders/") + shaderFiles[i]);
-        Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
-        computeShader.compile();
+        try {
+            std::ifstream computeFS(std::string("shaders/") + shaderFiles[i]);
+            Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
+            computeShader.compile();
 
-        m_computeShaders[i] = new Shader::ComputeProgram(computeShader);
-        m_computeShaders[i]->build();
+            m_computeShaders[i] = new Shader::ComputeProgram(computeShader);
+            m_computeShaders[i]->build();
+        } catch (std::exception& e) {
+            printf("Error occurred while compiling %s\n",
+                   shaderFiles[i].c_str());
+            printf("%s", e.what());
+        }
     }
 
     m_cellsUniform_thresh =
