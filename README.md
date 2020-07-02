@@ -14,11 +14,11 @@ mkdir build
 cd build
 cmake ..; make -j
 ```
-cmake can be provided the parameter -DCMAKE_BUILD_TYPE to set it to either Release or Debug if it suits your fancy, but the default is Release.
+cmake can be provided the parameter `-DCMAKE_BUILD_TYPE` to set it to either Release or Debug if it suits your fancy, but the default is Release.
 
-In order to run the metaballs application, ensure that the shaders folder is in the same directory as the executable, and use the command `<./metaballs>`.
+In order to run the metaballs application, ensure that the shaders folder is in the same directory as the executable, and use the command `./metaballs`.
 
-Currently the executable works with two command line arguments, `<-fps>` to set a target frames per second, and `<-size>` which sets the initial size of the application window. The window size should be formated as `<HeightxWidth>`. You can also use `<-h>` to view a small help page.
+Currently the executable works with two command line arguments, `-fps` to set a target frames per second, and `-size` which sets the initial size of the application window. The window size should be formated as `HeightxWidth`. You can also use `-h` to view a small help page.
 
 ## Usage
 
