@@ -1,5 +1,7 @@
 #include "Graphics.h"
 
+#define GRAPHICS_USE_SPIRV 1
+
 GLfloat Graphics::s_quadVertexBufferData[8] = {-1.0f, 1.0f, -1.0f, -1.0f,
                                                1.0f,  1.0f, 1.0f,  -1.0f};
 
@@ -42,15 +44,25 @@ Graphics::Graphics(int height, int width)
 
     // prepare the compute shaders
     // Circles, Cells, Meta_BlueGreen, Meta_RegOrange, Meta_RGB
+#if GRAPHICS_USE_SPIRV
+    std::vector<std::string> shaderFiles = {
+        "circles.comp.spv", "cells.comp.spv",    "meta_bg.comp.spv",
+        "meta_ro.comp.spv", "meta_rgb.comp.spv", "meta_params.comp.spv"};
+#else
     std::vector<std::string> shaderFiles = {
         "circles.comp", "cells.comp",    "meta_bg.comp",
         "meta_ro.comp", "meta_rgb.comp", "meta_params.comp"};
+#endif
     m_computeShaders.resize(NumShaderTypes);
     for (int i = 0; i < NumShaderTypes; i++) {
         try {
             std::ifstream computeFS(std::string("shaders/") + shaderFiles[i]);
-            Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER);
+            Shader::shader computeShader(computeFS, GL_COMPUTE_SHADER, GRAPHICS_USE_SPIRV);
+#if GRAPHICS_USE_SPIRV
+            computeShader.specialize();
+#else
             computeShader.compile();
+#endif
 
             m_computeShaders[i] = new Shader::ComputeProgram(computeShader);
             m_computeShaders[i]->build();
@@ -58,6 +70,7 @@ Graphics::Graphics(int height, int width)
             printf("Error occurred while compiling %s\n",
                    shaderFiles[i].c_str());
             printf("%s", e.what());
+            exit(-1);
         }
     }
 

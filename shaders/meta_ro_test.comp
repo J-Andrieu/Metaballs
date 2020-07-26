@@ -19,13 +19,17 @@ layout (std430, binding = 1) buffer metaball_data {
     ball balls[];
 } metaballs;
 
+#ifdef GL_SPIRV
+layout (std140, binding = 2) uniform uniforms_t {
+    float radiusMult;
+} uniforms_buffer;
+#else
 uniform float radiusMult = 100.0f;
+#endif
 
 float distance(float x1, float y1, float x2, float y2) {
-    float x = x2 - x1;
-    x = pow(x, 2.0);
-    float y = y2 - y1;
-    y = pow(y, 2.0);
+    float x = pow(float(x2 - x1), 2.0f);
+    float y = pow(float(y2 - y1), 2.0f);
     return sqrt(x + y);
 }
 
@@ -41,7 +45,11 @@ void main() {
     float val = 0.0f;
     for (int i = 0; i < metaballs.numBalls; i++) {
         float dist = distance(posX, posY, metaballs.balls[i].pos_x, metaballs.balls[i].pos_y);
+#ifdef GL_SPIRV
+        val += uniforms_buffer.radiusMult * metaballs.balls[i].size / dist;
+#else
         val += radiusMult * metaballs.balls[i].size / dist;
+#endif
     }
 
     val /= 255;

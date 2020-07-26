@@ -19,13 +19,17 @@ layout (std430, binding = 1) buffer metaball_data {
     ball balls[];
 } metaballs;
 
+#ifdef GL_SPIRV
+layout (std140, binding = 2) uniform uniforms_t {
+    float sumThresh;
+} uniforms_buffer;
+#else
 uniform float sumThresh = 5;
+#endif
 
 float distance(float x1, float y1, float x2, float y2) {
-    float x = x2 - x1;
-    x = pow(x, 2.0);
-    float y = y2 - y1;
-    y = pow(y, 2.0);
+    float x = pow(float(x2 - x1), 2.0f);
+    float y = pow(float(y2 - y1), 2.0f);
     return sqrt(x + y);
 }
 
@@ -50,11 +54,19 @@ void main() {
         }
     }
 
+#ifdef GL_SPIRV
+    if (sum > uniforms_buffer.sumThresh) {
+        color.r = metaballs.balls[closestIndex].r;
+        color.g = metaballs.balls[closestIndex].g;
+        color.b = metaballs.balls[closestIndex].b;
+    }
+#else
     if (sum > sumThresh) {
         color.r = metaballs.balls[closestIndex].r;
         color.g = metaballs.balls[closestIndex].g;
         color.b = metaballs.balls[closestIndex].b;
     }
+#endif
 
     imageStore(img_out, idx, color);
 }
