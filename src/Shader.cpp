@@ -30,6 +30,7 @@ using namespace Shader;
 shader::shader(GLenum shaderType) {
     m_shaderType = shaderType;
     m_shaderObj = glCreateShader(shaderType);
+    m_sourceType = GLSL;
 
     if (m_shaderObj == 0) {
         throw std::runtime_error(std::string("Error creating shader of type ") +
@@ -41,23 +42,25 @@ shader::shader(GLenum shaderType) {
  *  @param shaderFile An open file stream to the file containing the shader
  * source code
  *  @param shaderType The GLenum for the desired shader
+ *  @param isSPIRV Defaults to false, set to true if source is SPIRV
  *
  *  @note Throws a runtime error if a shader cannot be constructed
  */
-shader::shader(std::ifstream& shaderFile, GLenum shaderType)
+shader::shader(std::ifstream& shaderFile, GLenum shaderType, bool isSPIRV)
     : shader(shaderType) {
-    setSource(shaderFile);
+    setSource(shaderFile, isSPIRV);
 }
 
 /** Shader Constructor
  *  @param shaderString A string contiaining the shader source code
  *  @param shaderType The GLenum for the desired shader
- *
+  *  @param isSPIRV Defaults to false, set to true if source is SPIRV
+*
  *  @note Throws a runtime error if a shader cannot be constructed
  */
-shader::shader(std::string& shaderString, GLenum shaderType)
+shader::shader(std::string& shaderString, GLenum shaderType, bool isSPIRV)
     : shader(shaderType) {
-    setSource(shaderString);
+    setSource(shaderString, isSPIRV);
 }
 
 /// Shader destructor
@@ -68,35 +71,49 @@ shader::~shader() { glDeleteShader(m_shaderObj); }
  * code
  *  @param strings An array of strings containing the source
  *  @param lengths An array containing the length of each string
+ *  @param isSPIRV Defaults to false, set to true if source is SPIRV
  */
 void shader::setSource(GLsizei numStrings, const GLchar** strings,
-                       GLint* lengths) {
-    glShaderSource(m_shaderObj, numStrings, strings, lengths);
+                       GLint* lengths, bool isSPIRV) {
+    if (isSPIRV) {
+        if (!GL_VERSION_4_6) {
+            throw std::runtime_error(std::string("OpenGL 4.6+ is required to run SPIRV shaders"));
+        }
+        m_sourceType = SPIRV;
+        //assumes a single binary
+        glShaderBinary(1, &m_shaderObj, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, *strings, *lengths);
+    } else {
+        m_sourceType = GLSL;
+        glShaderSource(m_shaderObj, numStrings, strings, lengths);
+    }
+    
 }
 
 /** Sets the source code for a shader
  *  @param shaderString An std::string containing the shader source code
+ *  @param isSPIRV Defaults to false, set to true if source is SPIRV
  */
-void shader::setSource(std::string& shaderString) {
+void shader::setSource(std::string& shaderString, bool isSPIRV) {
     const GLchar* p[1];
     p[0] = shaderString.c_str();
     GLint lengths[1] = {(GLint)shaderString.size()};
 
-    setSource(1, p, lengths);
+    setSource(1, p, lengths, isSPIRV);
 }
 
 /** Sets the source code for a shader
  *  @param shaderFile An open file stream for the file containing the source
  * code
+ *  @param isSPIRV Defaults to false, set to true if source is SPIRV
  */
-void shader::setSource(std::ifstream& shaderFile) {
+void shader::setSource(std::ifstream& shaderFile, bool isSPIRV) {
 #if 1
     // use string stream to read in entire file
     std::stringstream buffer;
     buffer << shaderFile.rdbuf();
     m_shaderSource = buffer.str();
 
-    setSource(m_shaderSource);
+    setSource(m_shaderSource, isSPIRV);
 #else
     // reserve string same size as file then read in the file
     shaderFile.seekg(0, std::ios::end);
@@ -110,11 +127,41 @@ void shader::setSource(std::ifstream& shaderFile) {
 #endif
 }
 
+/** Specialize SPIRV shader
+ *  @param entryPoint The string name of the entrypoint function
+ *  @param numSpecializationConstants The number of specialization constants
+ *  @param pConstantIndex Pointer to constant index
+ *  @param pConstantValue Pointer to constant values
+ * 
+ *  @note Throws a runtime error if specialization fails
+ */
+void shader::specialize(std::string entryPoint, int numSpecializationConstants​, const GLuint *pConstantIndex​, const GLuint *pConstantValue​) {
+    if(!m_sourceType) {
+        throw std::runtime_error(std::string("Attempting to specialize GLSL shader!"));
+    }
+    glSpecializeShader(m_shaderObj, entryPoint.c_str(), numSpecializationConstants​, pConstantIndex​, pConstantValue​);
+
+    GLint success;
+    glGetShaderiv(m_shaderObj, GL_COMPILE_STATUS, &success);
+
+    if (!success) {
+        GLchar log[1024];
+        glGetShaderInfoLog(m_shaderObj, 1024, NULL, log);
+        std::cerr << "Error specializing: " << log << std::endl;
+        throw std::runtime_error(
+            std::string("Error specializing SPIRV shader of type ") +
+            resolveShaderType(m_shaderType));
+    }
+}
+
 /** Compiles the shader
  *  @note Throws a runtime error if compilation fails and prints the log to the
  * console
  */
 void shader::compile() {
+    if(m_sourceType) {
+        throw std::runtime_error(std::string("Attempting to compile SPIRV shader!"));
+    }
     glCompileShader(m_shaderObj);
 
     GLint success;

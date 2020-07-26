@@ -16,10 +16,16 @@ namespace Shader {
      */
     class shader {
     public:
+
+        typedef enum {
+            GLSL,
+            SPIRV
+        } SourceType;
+        
         shader() = delete;
         shader(GLenum shaderType);
-        shader(std::ifstream& shaderFile, GLenum shaderType);
-        shader(std::string& shaderString, GLenum shaderType);
+        shader(std::ifstream& shaderFile, GLenum shaderType, bool isSPIRV = false);
+        shader(std::string& shaderString, GLenum shaderType, bool isSPIRV = false);
 
         // shader(shader&& shaderObj);
         // shader& operator=(shader&& shaderObj);
@@ -29,10 +35,11 @@ namespace Shader {
         ~shader();
 
         void setSource(GLsizei numStrings, const GLchar** strings,
-                       GLint* lengths);
-        void setSource(std::ifstream& shaderFile);
-        void setSource(std::string& shaderString);
+                       GLint* lengths, bool isSPIRV = false);
+        void setSource(std::ifstream& shaderFile, bool isSPIRV = false);
+        void setSource(std::string& shaderString, bool isSPIRV = false);
 
+        void specialize(std::string entryPoint = std::string("main"), int numSpecializationConstants = 0, const GLuint *pConstantIndex​ = nullptr, const GLuint *pConstantValue​ = nullptr);
         void compile();
 
         GLuint object();
@@ -43,6 +50,7 @@ namespace Shader {
                                      ///< initializing from file
         GLenum m_shaderType;
         GLuint m_shaderObj;
+        SourceType m_sourceType;
     };
 
     /// Base class for OpenGL program containers
