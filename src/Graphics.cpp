@@ -466,7 +466,7 @@ void Graphics::bindSSBO() {
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
     *lenptr = (uint)m_numBalls;
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-    Ball* m_ssboData = (Ball*)glMapBufferRange(
+    m_ssboData = (Ball*)glMapBufferRange(
         GL_SHADER_STORAGE_BUFFER, sizeof(uint), sizeof(Ball) * m_numBalls,
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
     for (int i = 0; i < m_numBalls; i++) {
