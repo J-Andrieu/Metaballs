@@ -74,6 +74,7 @@ private:
     bool m_metaParamBlue;
     bool m_metaParamHigh;
     void bindSSBO();
+    Ball* m_ssboData;
 
     //metaball data
     bool m_genSSBO;

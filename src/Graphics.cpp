@@ -27,7 +27,8 @@ Graphics::Graphics(int height, int width)
       m_metaParamRed(true),
       m_metaParamGreen(false),
       m_metaParamBlue(false),
-      m_metaParamHigh(false) {
+      m_metaParamHigh(false),
+      m_ssboData(NULL) {
     // initialize the window
     m_window = new GUIWindow("Metaballs", height, width,
                              Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
@@ -125,15 +126,32 @@ void Graphics::updateDimensions() {
 
 void Graphics::update() {
     if (m_wigglyMovement) {
-        updateMetaballs_RandomPath(m_metaballs, 2.0f, m_width - m_menuWidth,
-                                   m_height);
+        if (!m_ssboData) {
+            updateMetaballs_RandomPath(m_metaballs, 2.0f, m_width - m_menuWidth,
+                                       m_height);
+        } else {
+            updateMetaballs_RandomPath(m_metaballs.size(), m_ssboData, 2.0f,
+                                       m_width - m_menuWidth, m_height);
+        }
     } else {
-        updateMetaballs_StraightPath(m_metaballs, m_width - m_menuWidth,
-                                     m_height);
+        if (!m_ssboData) {
+            updateMetaballs_StraightPath(m_metaballs, m_width - m_menuWidth,
+                                         m_height);
+        } else {
+            updateMetaballs_StraightPath(m_metaballs.size(), m_ssboData,
+                                         m_width - m_menuWidth, m_height);
+        }
     }
 
-    for (int i = 0; i < m_numBalls; i++) {
-        m_metaballs[i].color = {m_colors[i].x, m_colors[i].y, m_colors[i].z};
+    if (!m_ssboData) {
+        for (int i = 0; i < m_numBalls; i++) {
+            m_metaballs[i].color = {m_colors[i].x, m_colors[i].y,
+                                    m_colors[i].z};
+        }
+    } else {
+        for (int i = 0; i < m_numBalls; i++) {
+            m_ssboData[i].color = {m_colors[i].x, m_colors[i].y, m_colors[i].z};
+        }
     }
 }
 
@@ -334,12 +352,10 @@ void Graphics::m_drawGUIFunc(void* _params) {
 
     if (ImGui::Button("Add Ball")) {
         graphics->pushBall();
-        graphics->m_genSSBO = true;
     }
     ImGui::SameLine();
     if (ImGui::Button("Remove Ball")) {
         graphics->popBall();
-        graphics->m_genSSBO = true;
     }
 
     // block of graphs (scrollable)
@@ -366,6 +382,9 @@ void Graphics::pushBall(Ball ball) {
     m_metaballs[m_numBalls - 1] = ball;
     m_colors[m_numBalls - 1] =
         ImVec4(ball.color.r, ball.color.g, ball.color.b, 1.0f);
+
+    m_genSSBO = true;
+    bindSSBO();
 }
 
 void Graphics::pushBall() {
@@ -386,6 +405,9 @@ void Graphics::popBall() {
     m_metaballs.pop_back();
     m_colors.pop_back();
     m_numBalls--;
+
+    m_genSSBO = true;
+    bindSSBO();
 }
 
 void Graphics::drawBallInterface() {
@@ -409,6 +431,14 @@ void Graphics::drawBallInterface() {
 }
 
 void Graphics::bindSSBO() {
+    if (m_ssboData) {
+        for (int i = 0; i < m_numBalls; i++) {
+            m_metaballs[i] = m_ssboData[i];
+        }
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+        m_ssboData = NULL;
+    }
+
     if (m_genSSBO) {
         m_genSSBO = false;
         if (m_metaballsSSBO) {
@@ -436,11 +466,10 @@ void Graphics::bindSSBO() {
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
     *lenptr = (uint)m_numBalls;
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-    Ball* ballptr = (Ball*)glMapBufferRange(
+    Ball* m_ssboData = (Ball*)glMapBufferRange(
         GL_SHADER_STORAGE_BUFFER, sizeof(uint), sizeof(Ball) * m_numBalls,
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
     for (int i = 0; i < m_numBalls; i++) {
-        ballptr[i] = m_metaballs[i];
+        m_ssboData[i] = m_metaballs[i];
     }
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }

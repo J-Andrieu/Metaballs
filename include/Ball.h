@@ -25,4 +25,7 @@ typedef struct {
 void updateMetaballs_StraightPath(std::vector<Ball>& balls, size_t width, size_t height);
 void updateMetaballs_RandomPath(std::vector<Ball>& balls, float theta, size_t width, size_t height);
 
+void updateMetaballs_StraightPath(size_t numBalls, Ball* balls, size_t width, size_t height);
+void updateMetaballs_RandomPath(size_t numBalls, Ball* balls, float theta, size_t width, size_t height);
+
 #endif /* BALL_H */

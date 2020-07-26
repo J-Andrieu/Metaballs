@@ -2,7 +2,12 @@
 
 void updateMetaballs_StraightPath(std::vector<Ball>& balls, size_t width,
                                   size_t height) {
-    for (int i = 0; i < balls.size(); i++) {
+    updateMetaballs_StraightPath(balls.size(), balls.data(), width, height);
+}
+
+void updateMetaballs_StraightPath(size_t numBalls, Ball* balls, size_t width,
+                                  size_t height) {
+    for (int i = 0; i < numBalls; i++) {
         balls[i].position.x += balls[i].velocity.x;
         balls[i].position.y += balls[i].velocity.y;
 
@@ -31,9 +36,14 @@ void updateMetaballs_StraightPath(std::vector<Ball>& balls, size_t width,
     }
 }
 
-void updateMetaballs_RandomPath(std::vector<Ball>& balls, float theta,
+void updateMetaballs_RandomPath(std::vector<Ball>& balls, float theta, size_t width,
+                                  size_t height) {
+    updateMetaballs_RandomPath(balls.size(), balls.data(), theta, width, height);
+}
+
+void updateMetaballs_RandomPath(size_t numBalls, Ball* balls, float theta,
                                 size_t width, size_t height) {
-    for (int i = 0; i < balls.size(); i++) {
+    for (int i = 0; i < numBalls; i++) {
         // get normalized vector of velocity
         struct {
             float x;
