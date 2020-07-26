@@ -101,6 +101,7 @@ Graphics::Graphics(int height, int width)
     for (int i = 0; i < 5; i++) {
         pushBall();
     }
+    bindSSBO();
 }
 
 Graphics::~Graphics() {
@@ -194,7 +195,6 @@ void Graphics::m_drawFunc(void* _params) {
 
     // compute the gradient
     {
-        graphics->bindSSBO();
         graphics->m_computeShaders[graphics->m_currentShader]
             ->setActiveProgram();
         glDispatchCompute((GLuint)width - graphics->m_menuWidth, (GLuint)height,
@@ -352,10 +352,12 @@ void Graphics::m_drawGUIFunc(void* _params) {
 
     if (ImGui::Button("Add Ball")) {
         graphics->pushBall();
+        graphics->bindSSBO();
     }
     ImGui::SameLine();
     if (ImGui::Button("Remove Ball")) {
         graphics->popBall();
+        graphics->bindSSBO();
     }
 
     // block of graphs (scrollable)
@@ -384,7 +386,6 @@ void Graphics::pushBall(Ball ball) {
         ImVec4(ball.color.r, ball.color.g, ball.color.b, 1.0f);
 
     m_genSSBO = true;
-    bindSSBO();
 }
 
 void Graphics::pushBall() {
@@ -407,7 +408,6 @@ void Graphics::popBall() {
     m_numBalls--;
 
     m_genSSBO = true;
-    bindSSBO();
 }
 
 void Graphics::drawBallInterface() {
