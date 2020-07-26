@@ -83,7 +83,7 @@ private:
     std::vector<Ball> m_metaballs;
     std::vector<ImVec4> m_colors;
     void pushBall(Ball ball);
-    void pushBall();
+    void pushBall(int& height, int& width);
     void popBall();
     void drawBallInterface();
 };
