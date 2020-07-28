@@ -4,7 +4,7 @@ This project was created to learn more about compute shaders and to be a small r
 
 ## Dependencies
 
-This project relies on OpenGL 4.3, GLEW, and SDL2, as well as using Dear ImGui.
+This project relies on OpenGL 4.3 (4.6 if using SPIR-V shaders), GLEW, and SDL2, as well as using Dear ImGui.
 
 ## Compiling and Running
 
