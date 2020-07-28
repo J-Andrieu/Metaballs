@@ -1,7 +1,5 @@
 #include "Graphics.h"
 
-#define GRAPHICS_USE_SPIRV 0
-
 GLfloat Graphics::s_quadVertexBufferData[8] = {-1.0f, 1.0f, -1.0f, -1.0f,
                                                1.0f, 1.0f, 1.0f, -1.0f};
 
@@ -32,6 +30,9 @@ Graphics::Graphics(int height, int width)
       m_metaParamHigh(false),
       m_ssboData(NULL)
 {
+#if GRAPHICS_USE_SPIRV
+    m_ubo = 0;
+#endif
     // initialize the window
     m_window = new GUIWindow("Metaballs", height, width,
                              Window::DefaultWindowFlags() | SDL_WINDOW_UTILITY);
@@ -99,6 +100,7 @@ Graphics::Graphics(int height, int width)
         glGetUniformLocation(*m_computeShaders[Meta_Params], "high");
 
     // prepare vertex array
+    /*no longer needed
     glGenVertexArrays(1, &m_quadVAO);
     glBindVertexArray(m_quadVAO);
     GLuint quadVBO;
@@ -110,6 +112,7 @@ Graphics::Graphics(int height, int width)
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
     glDeleteBuffers(1, &quadVBO);
+    */
 
     // attach parameters for drawing functions to windows
     m_params = (drawParams){this};
@@ -310,35 +313,125 @@ void Graphics::m_drawGUIFunc(void *_params)
     ImGui::SameLine();
     if (ImGui::CollapsingHeader(graphics->m_shaderName.c_str()))
     {
+        auto activateProgram = [&]() {
+            graphics->m_computeShaders[graphics->m_currentShader]->setActiveProgram();
+        };
         if (ImGui::Button("Circles"))
         {
             graphics->m_currentShader = Circles;
+            activateProgram();
             graphics->m_shaderName = "Circles";
+#if GRAPHICS_USE_SPIRV
+            if (graphics->m_ubo)
+            {
+                glDeleteBuffers(1, &graphics->m_ubo);
+                graphics->m_ubo = 0;
+            }
+#endif
         }
         if (ImGui::Button("Cells"))
         {
             graphics->m_currentShader = Cells;
+            activateProgram();
             graphics->m_shaderName = "Cells";
+#if GRAPHICS_USE_SPIRV
+            if (graphics->m_ubo)
+            {
+                glDeleteBuffers(1, &graphics->m_ubo);
+                graphics->m_ubo = 0;
+            }
+            glGenBuffers(1, &graphics->m_ubo);
+            GLenum err = glGetError();
+            if (err != GL_NO_ERROR) {
+                printf("\n------------------------\n1) OpenGL Error: %d\n------------------------\n", err);
+            }
+            glBindBuffer(GL_UNIFORM_BUFFER, graphics->m_ubo);
+            err = glGetError();
+            if (err != GL_NO_ERROR) {
+                printf("\n------------------------\n2) OpenGL Error: %d\n------------------------\n", err);
+            }
+            glBufferData(GL_UNIFORM_BLOCK, sizeof(float), NULL, GL_DYNAMIC_COPY);
+            err = glGetError();
+            if (err != GL_NO_ERROR) {
+                printf("\n------------------------\n3) OpenGL Error: %d\n------------------------\n", err);
+            }
+            GLuint binding_index = 2;
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_index,
+                         graphics->m_ubo);
+            err = glGetError();
+            if (err != GL_NO_ERROR) {
+                printf("\n------------------------\n4) OpenGL Error: %d\n------------------------\n", err);
+            }
+            GLuint index = glGetProgramResourceIndex(*graphics->m_computeShaders[Cells],
+                                                 GL_UNIFORM_BLOCK,
+                                                 "uniforms_buffer");
+            err = glGetError();
+            if (err != GL_NO_ERROR) {
+                printf("\n------------------------\n5) OpenGL Error: %d\n------------------------\n", err);
+            }
+            glUniformBlockBinding(*graphics->m_computeShaders[Cells], index,
+                                    binding_index);
+            err = glGetError();
+            if (err != GL_NO_ERROR) {
+                printf("\n------------------------\n6) OpenGL Error: %d\n------------------------\n", err);
+            }
+#endif
         }
         if (ImGui::Button("Blue/Green Metaballs"))
         {
             graphics->m_currentShader = Meta_BlueGreen;
+            activateProgram();
             graphics->m_shaderName = "Blue/Green Metaballs";
+#if GRAPHICS_USE_SPIRV
+            if (graphics->m_ubo)
+            {
+                glDeleteBuffers(1, &graphics->m_ubo);
+            }
+            glGenBuffers(1, &graphics->m_ubo);
+            glBindBuffer(GL_UNIFORM_BUFFER, graphics->m_ubo);
+#endif
         }
         if (ImGui::Button("Red/Orange Metaballs"))
         {
             graphics->m_currentShader = Meta_RedOrange;
+            activateProgram();
             graphics->m_shaderName = "Red/Orange Metaballs";
+#if GRAPHICS_USE_SPIRV
+            if (graphics->m_ubo)
+            {
+                glDeleteBuffers(1, &graphics->m_ubo);
+            }
+            glGenBuffers(1, &graphics->m_ubo);
+            glBindBuffer(GL_UNIFORM_BUFFER, graphics->m_ubo);
+#endif
         }
         if (ImGui::Button("RGB Metaballs"))
         {
             graphics->m_currentShader = Meta_RGB;
+            activateProgram();
             graphics->m_shaderName = "RGB Metaballs";
+#if GRAPHICS_USE_SPIRV
+            if (graphics->m_ubo)
+            {
+                glDeleteBuffers(1, &graphics->m_ubo);
+            }
+            glGenBuffers(1, &graphics->m_ubo);
+            glBindBuffer(GL_UNIFORM_BUFFER, graphics->m_ubo);
+#endif
         }
         if (ImGui::Button("Parameterized Metaballs"))
         {
             graphics->m_currentShader = Meta_Params;
+            activateProgram();
             graphics->m_shaderName = "Parameterized Metaballs";
+#if GRAPHICS_USE_SPIRV
+            if (graphics->m_ubo)
+            {
+                glDeleteBuffers(1, &graphics->m_ubo);
+            }
+            glGenBuffers(1, &graphics->m_ubo);
+            glBindBuffer(GL_UNIFORM_BUFFER, graphics->m_ubo);
+#endif
         }
     }
 
@@ -347,29 +440,53 @@ void Graphics::m_drawGUIFunc(void *_params)
     case Cells:
         ImGui::SliderFloat("Threshold", &graphics->m_cellsThresh, 0.1, 5,
                            "");
+#if GRAPHICS_USE_SPIRV
+        {
+            float* p = (float*)glMapBuffer(GL_UNIFORM_BLOCK, GL_WRITE_ONLY);
+            GLenum err = glGetError();
+            if (err != GL_NO_ERROR) {
+                printf("\n------------------------\nOpenGL Error: %d\n------------------------\n", err);
+            }
+            *p = graphics->m_cellsThresh;
+            glUnmapBuffer(GL_UNIFORM_BLOCK);
+        }
+#else
         glUniform1f(graphics->m_cellsUniform_thresh,
                     1.0f / graphics->m_cellsThresh);
+#endif
         break;
 
     case Meta_BlueGreen:
         ImGui::SliderFloat("Radius Multiplier",
                            &graphics->m_metaBGRadiusMult, 0.01, 1000, "");
+#if GRAPHICS_USE_SPIRV
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(float), &graphics->m_metaBGRadiusMult, GL_DYNAMIC_DRAW);
+#else
         glUniform1f(graphics->m_metaBGUniform_radiusMult,
                     graphics->m_metaBGRadiusMult);
+#endif
         break;
 
     case Meta_RedOrange:
         ImGui::SliderFloat("Radius Multiplier",
                            &graphics->m_metaRORadiusMult, 0.01, 1000, "");
+#if GRAPHICS_USE_SPIRV
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(float), &graphics->m_metaRORadiusMult, GL_DYNAMIC_DRAW);
+#else
         glUniform1f(graphics->m_metaROUniform_radiusMult,
                     graphics->m_metaRORadiusMult);
+#endif
         break;
 
     case Meta_RGB:
         ImGui::SliderFloat("Radius Multiplier",
                            &graphics->m_metaRGBRadiusMult, 0.01, 2000, "");
+#if GRAPHICS_USE_SPIRV
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(float), &graphics->m_metaRGBRadiusMult, GL_DYNAMIC_DRAW);
+#else
         glUniform1f(graphics->m_metaRGBUniform_radiusMult,
                     graphics->m_metaRGBRadiusMult);
+#endif
         break;
 
     case Meta_Params:
@@ -385,7 +502,26 @@ void Graphics::m_drawGUIFunc(void *_params)
         ImGui::Checkbox("Blue", &graphics->m_metaParamBlue);
         ImGui::Checkbox("Default values to high",
                         &graphics->m_metaParamHigh);
-
+#if GRAPHICS_USE_SPIRV
+        {
+            typedef struct
+            {
+                float radiusMult;
+                bool red;
+                bool green;
+                bool blue;
+                bool high;
+            } ParametersStruct;
+            ParametersStruct params = {
+                graphics->m_metaParamRadiusMult,
+                graphics->m_metaParamRed,
+                graphics->m_metaParamGreen,
+                graphics->m_metaParamBlue,
+                graphics->m_metaParamHigh
+            }; 
+            glBufferData(GL_UNIFORM_BUFFER, sizeof(ParametersStruct), &params, GL_DYNAMIC_DRAW);
+        }
+#else
         glUniform1f(graphics->m_metaParamUniform_radiusMult,
                     graphics->m_metaParamRadiusMult);
         glUniform1i(graphics->m_metaParamUniform_red,
@@ -396,6 +532,7 @@ void Graphics::m_drawGUIFunc(void *_params)
                     graphics->m_metaParamBlue);
         glUniform1i(graphics->m_metaParamUniform_high,
                     graphics->m_metaParamHigh);
+#endif
         break;
     }
 

@@ -2,6 +2,7 @@
 #include "Shader.h"
 
 #define INVALID_UNIFORM_LOCATION 0x7fffffff
+#define GRAPHICS_USE_SPIRV 0
 
 class Graphics;
 
@@ -75,6 +76,9 @@ private:
     bool m_metaParamHigh;
     void bindSSBO();
     Ball* m_ssboData;
+#if GRAPHICS_USE_SPIRV
+    GLuint m_ubo;//uniform buffer object for spirv shaders
+#endif
 
     //metaball data
     bool m_genSSBO;
