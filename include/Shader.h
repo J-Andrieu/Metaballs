@@ -39,7 +39,7 @@ namespace Shader {
         void setSource(std::ifstream& shaderFile, bool isSPIRV = false);
         void setSource(std::string& shaderString, bool isSPIRV = false);
 
-        void specialize(std::string entryPoint = std::string("main"), int numSpecializationConstants = 0, const GLuint *pConstantIndex​ = nullptr, const GLuint *pConstantValue​ = nullptr);
+        void specialize(std::string entryPoint = std::string("main"), int numSpecializationConstants = 0, const GLuint *pConstantIndex = nullptr, const GLuint *pConstantValue = nullptr);
         void compile();
 
         GLuint object();

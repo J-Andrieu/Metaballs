@@ -135,11 +135,11 @@ void shader::setSource(std::ifstream& shaderFile, bool isSPIRV) {
  * 
  *  @note Throws a runtime error if specialization fails
  */
-void shader::specialize(std::string entryPoint, int numSpecializationConstants​, const GLuint *pConstantIndex​, const GLuint *pConstantValue​) {
+void shader::specialize(std::string entryPoint, int numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue) {
     if(!m_sourceType) {
         throw std::runtime_error(std::string("Attempting to specialize GLSL shader!"));
     }
-    glSpecializeShader(m_shaderObj, entryPoint.c_str(), numSpecializationConstants​, pConstantIndex​, pConstantValue​);
+    glSpecializeShader(m_shaderObj, entryPoint.c_str(), numSpecializationConstants, pConstantIndex, pConstantValue);
 
     GLint success;
     glGetShaderiv(m_shaderObj, GL_COMPILE_STATUS, &success);
